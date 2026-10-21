@@ -15,6 +15,12 @@
 @interface NTKFace : NSObject
 - (instancetype)_initWithFaceStyle:(NSInteger)style forDevice:(CLKDevice *)device;
 - (Class)faceViewClass;
++ (instancetype)bundledFaceWithIdentifier:(NSString *)identifier
+                               forDevice:(CLKDevice *)device
+                       initCustomization:(void (^)(NTKFace *face))customization;
+- (NSString *)bundleIdentifier;
+- (NSInteger)faceStyle;
+- (NSDictionary *)JSONObjectRepresentation;
 @end
 
 // Factory is inherited by NTKDigitalTimeLabel from ClockKitUI.
@@ -46,3 +52,24 @@
 - (void)becomeActive;
 - (void)resignActive;
 @end
+
+@interface NTKFaceBundle : NSObject
++ (NSString *)identifier;
+- (Class)faceClass;
+- (Class)faceViewClass;
+- (NTKFace *)defaultFaceForDevice:(CLKDevice *)device;
+- (NTKFace *)faceFromData:(NSData *)data;
+@end
+
+@interface NTKFaceBundleLoader : NSObject
++ (instancetype)faceBundleLoaderWithDirectories:(NSSet<NSURL *> *)directories;
+- (NTKFaceBundle *)loadFaceBundleWithIdentifier:(NSString *)identifier;
+@end
+
+// Descriptor JSON payload is NSData, consumed by NSJSONSerialization in faceFromData:.
+@interface NTKFaceInstanceDescriptor : NSObject <NSSecureCoding>
+- (instancetype)initWithJSONRepresentation:(NSData *)data resourceDirectory:(id)directory;
+@end
+
+FOUNDATION_EXPORT NSString * const NTKFaceBundleIdentifierKey;
+FOUNDATION_EXPORT NSString * const NTKFaceBundleFaceTypeKey;

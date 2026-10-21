@@ -11,7 +11,7 @@ xcrun --sdk watchsimulator clang \
   -target x86_64-apple-watchos26.5-simulator -isysroot "$sdk_path" \
   -fobjc-arc -fno-modules \
   -Wall -Wextra -Werror -g -dynamiclib \
-  "$experiment_dir/MYCustomFace.m" "$ntk_binary" \
+  "$experiment_dir/MYCustomFace.m" "$experiment_dir/MYBundleDiscovery.m" "$ntk_binary" \
   "$runtime_root/System/Library/PrivateFrameworks/ClockKitUI.framework/ClockKitUI" \
   -F"$runtime_root/System/Library/PrivateFrameworks" \
   -framework Foundation -framework UIKit -framework ClockKit -framework CoreGraphics \
@@ -19,3 +19,18 @@ xcrun --sdk watchsimulator clang \
   -o "$output_dir/MYCustomFaceExperiment.dylib"
 codesign --force --sign - "$output_dir/MYCustomFaceExperiment.dylib"
 printf '%s\n' "$output_dir/MYCustomFaceExperiment.dylib"
+
+bundle_dir="$output_dir/FaceBundles/MYLocalFaceBundle.bundle"
+mkdir -p "$bundle_dir"
+cp "$experiment_dir/LocalFaceBundle/Info.plist" "$bundle_dir/Info.plist"
+xcrun --sdk watchsimulator clang \
+  -target x86_64-apple-watchos26.5-simulator -isysroot "$sdk_path" \
+  -fobjc-arc -fno-modules -Wall -Wextra -Werror -g -bundle \
+  "$experiment_dir/LocalFaceBundle/MYLocalFaceBundle.m" \
+  "$output_dir/MYCustomFaceExperiment.dylib" "$ntk_binary" \
+  -F"$runtime_root/System/Library/PrivateFrameworks" \
+  -framework Foundation -framework UIKit \
+  -Wl,-rpath,@loader_path/../.. \
+  -o "$bundle_dir/MYLocalFaceBundle"
+codesign --force --sign - "$bundle_dir"
+printf '%s\n' "$bundle_dir"

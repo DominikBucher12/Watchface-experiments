@@ -352,3 +352,191 @@ always-on behavior were not separately reported and remain unverified.
 The next implementation milestone is an app-local NTKFaceBundle and isolated
 loader, with exact declarations verified before use. This does not authorize
 system process injection or simulator runtime modification.
+
+## App-local bundle milestone implementation — 2026-10-21
+
+Re-read installed x86_64 metadata before adding minimal declarations. Both
+NTKFaceBundle and NTKFaceBundleLoader inherit NSObject.
+
+| Method | Encoding |
+| --- | --- |
+| `+[NTKFaceBundleLoader faceBundleLoaderWithDirectories:]` | `@24@0:8@16` |
+| `-[NTKFaceBundleLoader initWithURLs:]` | `@24@0:8@16` |
+| `-[NTKFaceBundleLoader loadFaceBundleWithIdentifier:]` | `@24@0:8@16` |
+| `+[NTKFaceBundle identifier]` | `@16@0:8` |
+| `-[NTKFaceBundle faceClass]` / `faceViewClass` | `#16@0:8` |
+| `-[NTKFaceBundle defaultFaceForDevice:]` | `@24@0:8@16` |
+
+The loader factory at 0x370ad allocates a fresh NTKFaceBundleLoader and forwards
+the supplied collection to initWithURLs:. The manager's previously inspected
+construction uses a set of NSURL directory objects, so the experiment uses the
+same shape; collection types are not inferred from object encoding alone.
+The identifier lookup's block at 0x379fa filters bundle identifiers/metadata,
+loads matching NSBundles, extracts bundle classes, compares class identifiers,
+and allocates/initializes the matching class at 0x37df9. Thus its return is a
+bundle instance, not a Class; the helper declaration and runtime checks reflect
+that evidence.
+
+Added `Experiments/LocalFaceBundle` containing our own minimal BNDL Info.plist
+and MYLocalFaceBundle subclass. The class implements faceClass, faceViewClass,
+and defaultFaceForDevice: using the existing MYCustomFace/MYCustomFaceView and
+already exercised style zero. It inherits +identifier to test actual NSBundle
+identity rather than hardcoding that method. No gallery or restriction override
+is invented. No LegacyStyles or AdditionalIdentifiers metadata is needed for this
+single identifier-based test. Their absence is experimental until lookup runs.
+
+The build script compiles the principal class into a separate simulator bundle
+under its temporary FaceBundles directory. The bundle links to the existing
+experiment dylib via its @rpath install name, with @loader_path/../.. locating
+the dylib. It defines no duplicate MYCustomFace/MYCustomFaceView classes. All
+Apple dependencies resolve from the installed SDK/runtime; none are embedded.
+
+Added `MYDiscoverLocalFaceBundle(directoryPath)` to the experiment module. It
+requires the WatchFaceLab main thread, validates the disk metadata without loading
+the principal class, creates its own loader for only the explicit directory,
+looks up the unique identifier, verifies the returned class and its NSBundle
+path/identifier, then creates and checks a default face and renderer/timeView.
+It does not invoke NTKFaceBundleManager, mutate global caches, present a window,
+register a gallery face, or change runtime files. Normal NSBundle/dyld class
+loading remains process-wide until app exit; no unloading is attempted.
+
+Validation: both artifacts compile with warnings as errors and pass strict
+signature verification; source plist lint and git diff whitespace checks pass.
+The bundle binary targets WATCHOSSIMULATOR 26.5. Symbol inspection confirms the
+principal class is defined only in the bundle, while face/view symbols are
+imported from the module. Dependency inspection confirms the expected @rpath
+module dependency and system NanoTimeKit install path.
+
+Runtime discovery remains pending in the user's existing debugger. Instructions
+are in `Docs/LLDB-EXPERIMENT.md`. Build/link success does not prove NSBundle lookup,
+loader acceptance, identity, or default-face creation. The face model's own
+bundleIdentifier remains unset by the style-zero initializer; this milestone
+checks the bundle class/image identity, not face serialization or persistence.
+No system registration experiment is performed by this helper.
+
+## First successful cold app-local bundle discovery — user-reported, 2026-10-21
+
+The user ran the discovery helper on the main thread after loading the module
+into a fresh WatchFaceLab process. Supplied output:
+
+```text
+Local bundle PoC: metadata validated; alreadyLoaded=0; directory=/tmp/WatchFaceLab26-NTK/FaceBundles
+Local bundle PoC: isolated loader created; looking up dev.develodom.WatchFaceLab.LocalFaceBundle
+has no material, defaulting to light aluminum
+Local bundle PoC: identity verified; creating default face
+Custom Face PoC: assigned timeView=NTKDigitalTimeLabel
+Local bundle PoC PASS: identifier=dev.develodom.WatchFaceLab.LocalFaceBundle bundle=MYLocalFaceBundle face=MYCustomFace renderer=MYCustomFaceView timeView=NTKDigitalTimeLabel
+return (int) 1
+```
+
+This supersedes the pending runtime-discovery status above. The initial unloaded
+state and successful identifier lookup establish cold discovery/load through the
+isolated loader. Bundle-class/image identity checks, default-face creation, and
+custom renderer/timeView creation all passed. The single-identifier metadata
+without LegacyStyles/AdditionalIdentifiers worked for this tested path.
+
+Not established: warm-repeat lookup, face-model bundleIdentifier, serialization,
+gallery eligibility, global/shared-manager discovery, system face-library
+persistence, or active system presentation. No system process or simulator
+runtime file was changed. The next research gate is face-model identity and its
+verified bundled-face creation/serialization path before proposing registration.
+
+## Face-model identity and serialization implementation — 2026-10-21
+
+New verified x86_64 metadata:
+
+| Method / class | Evidence |
+| --- | --- |
+| `+[NTKFace bundledFaceWithIdentifier:forDevice:initCustomization:]` | `@40@0:8@16@24@?32` |
+| `-[NTKFace bundleIdentifier]` | `@16@0:8` |
+| `-[NTKFace faceStyle]` | `q16@0:8` |
+| `-[NTKFace JSONObjectRepresentation]` | `@16@0:8` |
+| `-[NTKFaceBundle(FaceGeneration) faceFromData:]` | `@24@0:8@16` |
+| NTKFaceInstanceDescriptor superclass | NSObject |
+| `initWithJSONRepresentation:resourceDirectory:` | `@32@0:8@16@24` |
+| `+[NTKFaceInstanceDescriptor supportsSecureCoding]` | `B16@0:8` |
+
+`nm -arch x86_64 -g` confirms exported NTKFaceBundleIdentifierKey and
+NTKFaceBundleFaceTypeKey. The experiment imports those constants instead of
+inventing JSON key strings or constructing a face schema manually.
+
+Factory trace: the three-argument bundled factory at 0x11a436 derives an analytics
+identifier and delegates to the four-argument variant at 0x11a4f8. That requests
+style 0x2c (44) through defaultFaceOfStyle:forDevice:initCustomization:, then
+copies bundleIdentifier into the model at offset 0x58 and analytics identifier
+at 0x40. For style 44, defaultFaceOfStyle: (0x11a243) rejects the NTKFace base
+class but allocates the supplied subclass directly. Other styles use style/class
+resolution. It runs applyDefaultConfiguration, then the optional customization
+block. No ivar writes, guessed setters, or class-resolution overrides are needed
+in our implementation.
+
+The global JSON decoder at 0x11ff6c resolves bundled identities through
+NTKFaceBundleManager.sharedManager. It is unsuitable for our explicit-directory
+experiment without further global integration, so it is not called.
+
+Instead, `-[NTKFaceBundle(FaceGeneration) faceFromData:]` at 0x1527cb unarchives
+NTKFaceInstanceDescriptor, reads faceJSONRepresentation, decodes those bytes as
+JSON, obtains the receiving bundle's identifier and faceClass, and calls that
+class's bundled-face factory. Its customization block at 0x152a85 constructs
+NTKFaceConfiguration from the decoded dictionary, invokes the face JSON
+customization hook, and applies configuration. The receiving bundle supplies the
+class/identity, so this is not proof of arbitrary identifier lookup in the global
+decoder. Resource-directory handling exists but is not exercised here.
+
+NTKFaceInstanceDescriptor's initializer at 0x3d4fdd copies both supplied objects.
+Its JSON payload is established as NSData by the faceFromData: consumer. The
+resourceDirectory parameter is left as id in the minimal declaration and passed
+nil; its concrete non-nil type/semantics are not assumed.
+
+Added explicit `MYRoundTripLocalFaceBundle(directoryPath)`. It preserves the
+existing discovery assertions, obtains the bundle via its own loader, invokes
+the bundled factory on MYCustomFace with a nil customization block, and verifies
+class, style 44, and model identifier. It calls JSONObjectRepresentation, validates
+and encodes that output using public NSJSONSerialization, wraps it in the native
+descriptor, and archives it with public secure NSKeyedArchiver. It calls the local
+bundle's faceFromData:, checks restored class/style/identifier and full JSON
+object equality, then creates/verifies MYCustomFaceView and a non-nil timeView.
+The archive stays in memory. No fallback, shared-manager cache modification,
+swizzling, file-library write, or registration is added. The original bundle
+style-zero factory remains unchanged as a comparison path.
+
+Both artifacts build with warnings as errors and passed strict signature checks;
+export inspection confirms the helper and native descriptor/key dependencies.
+Runtime execution remains pending in Xcode; instructions are in
+Docs/LLDB-EXPERIMENT.md. New possible failure points include default configuration
+for bundled style, analytics derivation for our identifier, secure descriptor
+coding, configuration reconstruction and renderer behavior with style 44. Build
+success establishes none of those runtime results. Even a pass covers only the
+minimal configuration; edits/resources, global discovery, gallery eligibility,
+face-library persistence and cross-process restoration remain unverified.
+
+## Successful bundled identity and serialization round trip — user-reported, 2026-10-21
+
+The user ran MYRoundTripLocalFaceBundle on the main thread after loading the
+module into a fresh app process. Cold discovery passed again (alreadyLoaded=0).
+The supplied subsequent output was:
+
+```text
+Local identity PoC: entering bundled-face factory on MYCustomFace
+Local identity PoC: model class=MYCustomFace style=44 identifier=dev.develodom.WatchFaceLab.LocalFaceBundle
+Local identity PoC: serialized faceType=bundle JSON bytes=162
+Local identity PoC: entering bundle faceFromData:, archive bytes=503
+Custom Face PoC: assigned timeView=NTKDigitalTimeLabel
+Local identity PoC PASS: class=MYCustomFace style=44 identifier=dev.develodom.WatchFaceLab.LocalFaceBundle JSON equal=1 renderer=MYCustomFaceView
+return (int) 1
+```
+
+This supersedes the pending runtime status for the minimal identity/serialization
+test. The native bundled factory, generated faceType=bundle JSON, secure descriptor
+archive, receiving-bundle reconstruction, full JSON equality, and restored custom
+renderer/timeView creation all passed in this app process. Reported payload
+sizes are observations, not stable format requirements.
+
+This does not establish global decoder resolution, nondefault customization or
+resources, native-controller presentation of the restored style-44 model,
+cross-process restoration, gallery eligibility, or system face-library install.
+All serialization was in memory; no system library or runtime files changed.
+The next integration gate is native presentation/activation of the identified,
+restored model, followed by read-only research into shared discovery and gallery
+eligibility. Any eventual system-registration experiment still requires a concrete
+change/rollback proposal before system-process or runtime changes.

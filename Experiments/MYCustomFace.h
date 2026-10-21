@@ -20,3 +20,8 @@ FOUNDATION_EXPORT void MYDismissCustomFaceExperiment(void);
 FOUNDATION_EXPORT BOOL MYPresentNativeControllerExperiment(NSInteger style);
 FOUNDATION_EXPORT BOOL MYSetNativeControllerExperimentActive(BOOL active);
 FOUNDATION_EXPORT void MYDismissNativeControllerExperiment(void);
+
+// Searches only the explicit directory; does not use the shared bundle manager.
+FOUNDATION_EXPORT BOOL MYDiscoverLocalFaceBundle(NSString *directoryPath);
+
+FOUNDATION_EXPORT BOOL MYRoundTripLocalFaceBundle(NSString *directoryPath);

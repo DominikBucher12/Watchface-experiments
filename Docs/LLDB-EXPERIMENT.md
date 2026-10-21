@@ -175,3 +175,105 @@ console expressions. The activation commands above use integer literals and cast
 the result to int (1 means success). This changes only the debugger expression;
 the exported function retains its compiled BOOL signature. An expression compile
 error does not invoke the function or change activation state.
+
+## App-local face bundle discovery
+
+The build script now also creates:
+
+```text
+/tmp/WatchFaceLab26-NTK/FaceBundles/MYLocalFaceBundle.bundle
+```
+
+It contains our own executable/plist, with identifier
+`dev.develodom.WatchFaceLab.LocalFaceBundle` and principal class MYLocalFaceBundle.
+It depends on the experiment dylib; both artifacts must remain in their generated
+relative locations. No Apple framework is embedded.
+
+Restart WatchFaceLab in Xcode to clear prior loaded experiment classes. Bring the
+app forward, pause, and run individually:
+
+```lldb
+thread select 1
+expr -l objc++ -- (int)[NSThread isMainThread]
+process load /tmp/WatchFaceLab26-NTK/MYCustomFaceExperiment.dylib
+expr -l objc++ -- (int)MYDiscoverLocalFaceBundle(@"/tmp/WatchFaceLab26-NTK/FaceBundles")
+```
+
+The thread check must return 1 and loading must succeed before calling discovery.
+Do **not** manually load the .bundle executable first. The point of this test is
+for NTKFaceBundleLoader to discover and load it from its metadata.
+
+Expected first-call stages:
+
+```text
+Local bundle PoC: metadata validated; alreadyLoaded=0; directory=...
+Local bundle PoC: isolated loader created; looking up dev.develodom.WatchFaceLab.LocalFaceBundle
+Local bundle PoC: identity verified; creating default face
+Custom Face PoC: assigned timeView=NTKDigitalTimeLabel
+Local bundle PoC PASS: identifier=dev.develodom.WatchFaceLab.LocalFaceBundle bundle=MYLocalFaceBundle face=MYCustomFace renderer=MYCustomFaceView timeView=NTKDigitalTimeLabel
+```
+
+A return value of 1 means all checks passed. Paste the entire output, including
+any extra framework diagnostics. If it fails, preserve the error/stage logs; for
+an exception, capture `bt`. No automatic fallback directly loads the bundle.
+
+This test creates a renderer without displaying it. The original SwiftUI app
+should remain visible after `continue`. Local loader/face/view ownership is
+released on return, while the loaded Objective-C image persists until app exit.
+A second call in the same process may report alreadyLoaded=1 and can test warm
+lookup; only an app restart establishes a fresh-load repeat. No unloading or
+filesystem cleanup is needed for normal use.
+
+A pass proves explicit-directory lookup, principal-class discovery, identity,
+and default-face/renderer creation. It does not establish gallery/device
+eligibility, model serialization, shared-manager discovery, or system install.
+The face still uses the existing style-zero initializer, which does not populate
+its bundleIdentifier. The identity check here concerns the bundle class/image,
+not persistent face-model identity. That is a separate research gate.
+
+## Face-model identity and in-memory serialization round trip
+
+Restart WatchFaceLab before loading this rebuilt module/bundle. In the foreground
+app, pause and run individually:
+
+```lldb
+thread select 1
+expr -l objc++ -- (int)[NSThread isMainThread]
+process load /tmp/WatchFaceLab26-NTK/MYCustomFaceExperiment.dylib
+expr -l objc++ -- (int)MYRoundTripLocalFaceBundle(@"/tmp/WatchFaceLab26-NTK/FaceBundles")
+```
+
+The main-thread check must return 1 and module loading must succeed. This helper
+first runs the existing discovery assertions; expect its earlier PASS output.
+It then creates an identified bundled face (style 44, verified from the factory
+implementation), serializes the framework-generated JSON into an in-memory
+securely archived NTKFaceInstanceDescriptor, and calls the local bundle's
+`faceFromData:`. Nothing is written to the system face library or to disk.
+
+Expected subsequent stages:
+
+```text
+Local identity PoC: entering bundled-face factory on MYCustomFace
+Local identity PoC: model class=MYCustomFace style=44 identifier=dev.develodom.WatchFaceLab.LocalFaceBundle
+Local identity PoC: serialized faceType=... JSON bytes=...
+Local identity PoC: entering bundle faceFromData:, archive bytes=...
+Local identity PoC PASS: class=MYCustomFace style=44 identifier=dev.develodom.WatchFaceLab.LocalFaceBundle JSON equal=1 renderer=MYCustomFaceView
+```
+
+A final return value of 1 means all checks passed. Do not assume a particular
+serialized faceType string or JSON/archive byte count; those come from the
+installed framework. On NO, an exception, or a crash, preserve stage logs and
+`bt` before retrying. A JSON mismatch prints both representations for research.
+The test has no new window; use `continue` to resume the normal app.
+
+The global `+[NTKFace faceWithJSONObjectRepresentation:forDevice:]` decoder is
+not used: it resolves bundled styles through the shared manager, which does not
+know our explicit test directory. No shared-loader replacement, swizzling,
+cache mutation, or system installation is used to work around that limitation.
+
+The original discovery helper and local bundle defaultFaceForDevice: retain their
+style-zero behavior for comparison. This new helper calls the bundled factory
+explicitly, so successful new behavior does not silently change the old test.
+A pass establishes a minimal configuration round trip through the receiving bundle;
+custom edits, resource files, gallery eligibility and cross-process restoration
+remain separate tests.
