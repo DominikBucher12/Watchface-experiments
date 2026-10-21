@@ -25,3 +25,14 @@ FOUNDATION_EXPORT void MYDismissNativeControllerExperiment(void);
 FOUNDATION_EXPORT BOOL MYDiscoverLocalFaceBundle(NSString *directoryPath);
 
 FOUNDATION_EXPORT BOOL MYRoundTripLocalFaceBundle(NSString *directoryPath);
+
+// Restores only after all existing identity/JSON/renderer assertions pass.
+FOUNDATION_EXPORT MYCustomFace *MYRestoreLocalFaceBundle(NSString *directoryPath);
+FOUNDATION_EXPORT BOOL MYPresentRestoredLocalFaceExperiment(NSString *directoryPath);
+
+FOUNDATION_EXPORT BOOL MYInspectLocalFaceGallery(NSString *directoryPath);
+
+// Start schedules native asynchronous loading; resume before checking.
+FOUNDATION_EXPORT BOOL MYStartNativeGalleryCollection(NSString *directoryPath);
+FOUNDATION_EXPORT BOOL MYCheckNativeGalleryCollection(void);
+FOUNDATION_EXPORT void MYReleaseNativeGalleryCollection(void);

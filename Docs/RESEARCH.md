@@ -540,3 +540,289 @@ The next integration gate is native presentation/activation of the identified,
 restored model, followed by read-only research into shared discovery and gallery
 eligibility. Any eventual system-registration experiment still requires a concrete
 change/rollback proposal before system-process or runtime changes.
+
+## Restored-model native hosting integration — 2026-10-21
+
+Refactored the already successful identity round-trip implementation to return its
+checked restored MYCustomFace through MYRestoreLocalFaceBundle(directoryPath).
+The existing boolean MYRoundTripLocalFaceBundle wrapper still runs those same
+checks. No private method or declaration was added for this integration.
+
+The native preview now has a common internal presentation function accepting a
+MYCustomFace. The original style-based entry point still constructs its face and
+uses that function. New explicit MYPresentRestoredLocalFaceExperiment(directoryPath)
+rejects open previews, obtains the checked restored style-44 model, presents it
+through the common function, and verifies that the retained model pointer is the
+exact restored object. It logs style and identifier before native initialization.
+Activation/deactivation/dismissal reuse the existing helpers; activation remains
+an explicit later step. Restored-model initialization/appearance/lifecycle remain
+pending user execution; no result is inferred from the earlier style-zero test.
+
+Both module and bundle rebuild with warnings as errors; whitespace checks pass.
+No runtime filesystem, shared manager, face-library storage or system process was
+modified. Commands are in Docs/LLDB-EXPERIMENT.md.
+
+### Further read-only gallery findings
+
+- `+[NTKFace isRestrictedForDevice:]` at 0x12205c returns zero in the base class.
+  MYCustomFace inherits this behavior; no restriction bypass override is needed.
+  This is only one eligibility check, not a claim of gallery acceptance.
+- `-[NTKFaceBundle galleryFacesForDevice:]` obtains gallery edit options and invokes
+  defaultFaceForDevice: (selector reference at 0xbfadf), with additional pigment
+  and edit-option handling. Our local bundle still returns the style-zero model
+  from that method; the successful identified round trip called the bundled
+  factory separately. Thus gallery-generated model identity is not yet established.
+- `-[NTKFacesBundleArrayGalleryCollection initWithDevice:faceBundle:]` reads gallery
+  title, description and row priorities and observes the bundle. Producing a face
+  alone does not satisfy the full gallery collection/metadata path.
+
+Next gate after restored hosting: verify and test a bundled defaultFaceForDevice:
+implementation and gallery metadata/face generation using the isolated loader.
+The shared manager still has no configured path to the local bundle. No proposal
+to modify its caches, system search directories or running system processes is
+part of this change.
+
+## Restored identified model: complete native lifecycle — user-verified, 2026-10-21
+
+The user supplied successful cold discovery, identity/JSON round-trip, and exact
+restored-model hosting logs for style 44 and identifier
+`dev.develodom.WatchFaceLab.LocalFaceBundle`. Native-controller bounds were
+208 x 248. The supplied screenshot shows the central native digital time and
+Custom Face PoC label on a dark background inside the app preview. A small clock
+also appears at top right; its attribution to app/system chrome is an inference,
+not an independently traced view identity.
+
+The user subsequently ran explicit activation/deactivation and dismissal:
+
+```text
+MYSetNativeControllerExperimentActive(1):
+Native controller PoC: entering becomeActive
+Native controller PoC: explicit activation request completed, active=1
+return (int) 1
+MYSetNativeControllerExperimentActive(0):
+Native controller PoC: entering resignActive
+Native controller PoC: explicit activation request completed, active=0
+return (int) 1
+MYDismissNativeControllerExperiment():
+Native controller PoC: beginning dismissal
+Native controller PoC: preview ownership released
+```
+
+The user confirmed this works as expected, completing one user-verified native
+presentation/activation/deactivation/dismissal cycle for the identified restored
+model. This supersedes its pending runtime lifecycle status above. Deallocation,
+repeated-cycle stability, time advancement across a minute boundary, always-on
+behavior, gallery eligibility, global discovery and system installation remain
+separate/unverified. Next milestone: isolated gallery face generation and metadata
+using the local bundle; no system process/runtime changes are authorized by this
+successful app-host result.
+
+## Isolated gallery contract implementation — 2026-10-21
+
+Verified installed 23T570 x86_64 method encodings before adding declarations:
+
+| Method | Encoding |
+| --- | --- |
+| `galleryFacesForDevice:` | `@24@0:8@16` |
+| `galleryTitleForDevice:` | `@24@0:8@16` |
+| `galleryDescriptionForDevice:` | `@24@0:8@16` |
+| `galleryRowPrioritiesForDevice:` | `@24@0:8@16` |
+| `+[NTKFace isRestrictedForDevice:]` | `B24@0:8@16` |
+
+Disassembly shows base galleryFacesForDevice: at 0xbfa7d requests gallery edit
+options and a default face, then enumerates pigment/edit variants. Base
+galleryEditOptionsForDevice: at 0xbfd8f returns nil. For this variant-free PoC,
+MYLocalFaceBundle explicitly implements the verified galleryFacesForDevice:
+selector to return one default face (or an empty array on failure). This avoids
+assuming the base implementation produces an entry without edit options.
+
+The bundle's defaultFaceForDevice: now uses the already verified bundled factory
+with its actual class-derived identifier; it no longer produces the unidentified
+style-zero comparison face. This supersedes earlier notes preserving the bundle's
+style-zero default. The independent style-based preview remains available and
+unchanged. Added concrete galleryTitleForDevice: and galleryDescriptionForDevice:
+methods. Row priorities remain inherited: the base method at 0xbfa75 returns nil;
+its concrete non-nil schema is not guessed (minimal declaration returns id).
+No device-restriction override is added: the inherited implementation returns NO.
+
+Added MYInspectLocalFaceGallery(directoryPath). It reuses discovery/class-image
+identity assertions, obtains the bundle through another explicit-directory loader,
+checks inherited restriction status and nonempty metadata, and requests gallery
+faces. It requires the single returned face to be MYCustomFace, style 44, with
+the correct model identifier and valid native JSON, then verifies custom renderer
+and timeView creation. It does not create a collection or gallery UI, alter global
+lookup caches, or write system library/runtime files. A pass will establish the
+local bundle's supplied gallery contract only; it cannot establish global gallery
+visibility or native collection eligibility by testing our overrides alone.
+
+Validation: module and bundle build with warnings as errors; both strict signature
+checks and diff whitespace checks pass. Runtime execution of the updated bundle
+default and gallery contract is pending. Commands are in Docs/LLDB-EXPERIMENT.md.
+
+## Successful isolated gallery contract — user-reported, 2026-10-21
+
+The user ran MYInspectLocalFaceGallery on the main thread in a fresh app process.
+Cold discovery succeeded with alreadyLoaded=0. The updated identified default-face
+factory created MYCustomFaceView with NTKDigitalTimeLabel. Subsequent output:
+
+```text
+Local gallery PoC: inherited device restriction=0
+Local gallery PoC: title=Custom Face PoC description=Minimal custom digital face for the isolated WatchFaceLab experiment. rowPriorities=(null)
+Local gallery PoC: requesting gallery faces
+Custom Face PoC: assigned timeView=NTKDigitalTimeLabel
+Local gallery PoC PASS: faces=1 title=Custom Face PoC class=MYCustomFace style=44 identifier=dev.develodom.WatchFaceLab.LocalFaceBundle renderer=MYCustomFaceView
+return (int) 1
+```
+
+This supersedes pending execution status for the local gallery method test.
+The inherited restriction result, provided metadata, single identified gallery
+model, valid JSON assertions, and renderer/timeView creation all passed. Nil row
+priorities were observed and are not assumed to prove native collection acceptance.
+No native gallery collection/UI, shared discovery, system gallery entry or library
+installation was exercised. Next gate: a native gallery collection consuming the
+explicit local bundle, with its initialization/loading/accessor signatures verified
+before implementation. Runtime/system-process modifications remain outside scope.
+
+## Native gallery collection consumer implementation — 2026-10-21
+
+Verified superclass chain from installed x86_64 metadata:
+NTKFacesBundleArrayGalleryCollection -> NTKFacesArrayGalleryCollection ->
+NTKGalleryCollection -> NSObject. Minimal declarations preserve the actual chain.
+
+Verified methods:
+
+| Method | Encoding |
+| --- | --- |
+| `initWithDevice:faceBundle:` | `@32@0:8@16@24` |
+| `loadFaces` | `v16@0:8` |
+| `numberOfFaces` | `Q16@0:8` |
+| `faceAtIndex:` | `@24@0:8Q16` |
+| `title` / `descriptionText` | `@16@0:8` |
+
+Initializer at 0x320438 retains the device/bundle, consumes title, description and
+row priorities, then adds itself as a bundle observer. It does not load faces.
+`loadFaces` at 0x3205f5 dispatches a block to
+NTKFacesArrayGalleryCollectionLoadQueue. Its block at 0x320826 requests the
+bundle's gallery faces, has a conditional widget-migration path, and publishes
+results asynchronously. The inherited numberOfFaces (0x2aa3d) reads the stored
+array count, and faceAtIndex: (0x2aa5a) accesses that array. `setFaces:` notifies
+a delegate via the selector spelled galleryCollectionDidChange:shouldUpdateSnaphots:.
+No delegate callback is implemented or called by the experiment.
+The collection's dealloc at 0x3205a9 removes itself as bundle observer.
+
+Added staged helpers: MYStartNativeGalleryCollection(directoryPath) first checks
+the existing local gallery contract, then passes the explicit local bundle to
+a real NTKFacesBundleArrayGalleryCollection. It verifies native metadata getters,
+retains the collection, and calls loadFaces. A YES start result means scheduling
+only. The app must resume before MYCheckNativeGalleryCollection queries the
+stored count/index, checks class/style/identity/JSON, and constructs a renderer.
+Zero is logged as ambiguous pending/empty/failed; it is not automatically retried
+or treated as success. MYReleaseNativeGalleryCollection releases experiment
+ownership without trying to cancel unknown internal work or prove deallocation.
+
+Both artifacts build with warnings as errors, pass strict signature verification,
+and pass whitespace checks. Native asynchronous collection consumption remains
+pending user execution. This test bypasses global discovery by explicitly supplying
+the local bundle, but does not replace its face array or call setFaces: itself.
+There is no global gallery insertion, system library write, runtime change,
+swizzling or system process attachment. Full gallery UI and system registration
+remain unverified even if this native consumer test succeeds.
+
+## Native gallery consumer: partial success with crash — user-reported, 2026-10-21
+
+Cold discovery/local gallery checks passed. Native collection initialization
+accepted metadata and loadFaces was scheduled, but the initial LLDB expression
+then reported:
+
+```text
+Native gallery PoC STARTED: resume the app before checking; this is not a load-success result
+error: Expression execution was interrupted: EXC_BAD_ACCESS (code=EXC_I386_GPFLT).
+The process has been returned to the state before expression evaluation.
+```
+
+After the user continued the process, MYCheckNativeGalleryCollection reported
+NTKFacesBundleArrayGalleryCollection, title Custom Face PoC, faces=1, and emitted
+its PASS log with MYCustomFace, style 44, correct identifier, MYCustomFaceView and
+an assigned native timeView. Collection ownership release was subsequently logged.
+
+This establishes that native asynchronous loading populated the collection in
+that run, but does NOT establish a clean start/load/lifecycle result. LLDB's
+expression-state restoration does not roll back arbitrary Objective-C side
+effects or asynchronous work. The PASS checks therefore coexist with the crash;
+they must not be used to dismiss it. No backtrace, faulting instruction, or
+faulting-thread identity was supplied. Cause remains unknown; attributing it to
+LLDB, threading, object lifetime, or a particular private method would be speculation.
+
+Next diagnostic: reproduce the start in a fresh app process and capture thread
+list, all-thread backtrace, current frame and faulting instruction immediately at
+the EXC_BAD_ACCESS, before continuing or evaluating more expressions. Stop adding
+consumer/registration integrations until the failure is understood. No speculative
+API overrides or threading workaround has been added.
+
+## Fault capture refinement — 2026-10-21
+
+User's next backtrace capture (PID 8870) shows thread 1 stopped by SIGSTOP in
+mach_msg2_trap, with CoreFoundation/UIApplication/SwiftUI run-loop frames. Other
+threads are idle worker/event-fetch threads. This capture does not contain an
+EXC_BAD_ACCESS stop or identify its faulting instruction. It cannot establish the
+cause of the prior native-collection expression interruption.
+
+Checked `xcrun lldb --batch -o 'help expression'` locally. The installed debugger
+supports `-u <boolean>` / `--unwind-on-error`, documented as cleaning up program
+state when an expression crashes or raises a signal. Revised reproduction uses
+`expr -l objc++ -u false -- (int)MYStartNativeGalleryCollection(...)` in a fresh
+process to preserve the fault location. No implementation change or speculative
+fix has been made. Capture the selected fault thread before continuing or forcing
+thread 1. The earlier simple post-error capture instructions did not account for
+LLDB's automatic expression unwinding.
+
+## First clean native gallery collection cycle — user-reported, 2026-10-21
+
+In PID 9009, after confirming the module symbol was loaded, the user invoked
+MYStartNativeGalleryCollection with LLDB -u false. Cold discovery/local gallery
+checks passed, native initialization accepted metadata, loadFaces was scheduled,
+and the expression returned (int) 1 without an exception. After resuming and
+pausing the app, the native check reported:
+
+```text
+Native gallery PoC: collection=NTKFacesBundleArrayGalleryCollection title=Custom Face PoC faces=1
+Custom Face PoC: assigned timeView=NTKDigitalTimeLabel
+Native gallery PoC PASS: native collection faces=1 class=MYCustomFace style=44 identifier=dev.develodom.WatchFaceLab.LocalFaceBundle renderer=MYCustomFaceView
+return (int) 1
+```
+
+Collection ownership release and process resume then completed without a reported
+fault. This establishes one clean explicit-local-bundle native collection
+start/load/check/release cycle. It does not establish deallocation or repeated-run
+stability. The earlier EXC_BAD_ACCESS did not reproduce in this run and remains
+unexplained; changing the LLDB unwind option is not evidence of a fix or cause.
+
+Established milestones now include local cold discovery, identified default and
+gallery models, native JSON/descriptor reconstruction, restored model presentation
+and activation, and native asynchronous gallery collection consumption. None
+establish shared-manager discovery, system gallery visibility or system library
+installation. Next research should map global gallery discovery and integration
+constraints read-only, then prepare exact changes/rollback for a separately
+approved system experiment. No system mutation follows automatically from this pass.
+
+## Local PoC complete; system integration plan — 2026-10-21
+
+The user requested progress and a finite account of remaining checks. No additional
+local PoC variants are required before integration planning. There are two next
+system gates: session shared-discovery/gallery integration, then separately designed
+persistent library/selection/restoration integration.
+
+Read-only tracing connected NTKGalleryCollection.galleryCollectionsForDevice: to
+shared-manager enumeration and native bundle collection construction, with title
+and internal-only checks. Base _isInternalOnlyForDevice: returns NO. Confirmed
+loader _urls NSSet and manager readonly loader property in installed metadata.
+Important rollback finding: manager _resetCaches clears the cached enumeration
+array, not both progressive identifier/style dictionaries. Persistence uses an
+XPC-backed collection rather than merely an in-process array.
+
+Concrete scope, candidate loader-getter bridge, staged ClockFace preflight,
+rollback limits and the original authorization boundary are documented in
+Docs/INTEGRATION-PROPOSAL.md. This is a proposal, not a ready executable bridge;
+no system process was attached or changed. No application implementation changed
+in this research pass. The next engineering work is preparing the opt-in bridge
+and verified rollback, followed by specific approval before system execution.

@@ -136,7 +136,7 @@ void MYDismissCustomFaceExperiment(void) {
     MYExperimentFace = nil;
 }
 
-BOOL MYPresentNativeControllerExperiment(NSInteger style) {
+static BOOL MYPresentNativeFace(MYCustomFace *face) {
     if (![NSThread isMainThread] ||
         ![[NSBundle mainBundle].bundleIdentifier isEqualToString:@"dev.develodom.WatchFaceLab"]) {
         NSLog(@"Native controller PoC requires WatchFaceLab on the main thread");
@@ -159,11 +159,6 @@ BOOL MYPresentNativeControllerExperiment(NSInteger style) {
         NSLog(@"Native controller PoC requires an active app scene");
         return NO;
     }
-    NSLog(@"Native controller PoC: retrieving device");
-    CLKDevice *device = [CLKDevice currentDevice];
-    if (!device) return NO;
-    NSLog(@"Native controller PoC: initializing face, style=%ld", (long)style);
-    MYCustomFace *face = [[MYCustomFace alloc] _initWithFaceStyle:style forDevice:device];
     if (!face) return NO;
     NSLog(@"Native controller PoC: entering initWithFace:configuration: with nil block");
     NTKFaceViewController *controller = [[NTKFaceViewController alloc] initWithFace:face
@@ -194,7 +189,37 @@ BOOL MYPresentNativeControllerExperiment(NSInteger style) {
     [controller.view layoutIfNeeded];
     NSLog(@"Native controller PoC: controller=%@ renderer=%@ style=%ld bounds=%@; explicit activation not requested",
           NSStringFromClass(controller.class), NSStringFromClass(renderer.class),
-          (long)style, NSStringFromCGRect(renderer.bounds));
+          (long)face.faceStyle, NSStringFromCGRect(renderer.bounds));
+    return YES;
+}
+
+BOOL MYPresentNativeControllerExperiment(NSInteger style) {
+    if (![NSThread isMainThread] ||
+        ![[NSBundle mainBundle].bundleIdentifier isEqualToString:@"dev.develodom.WatchFaceLab"]) return NO;
+    if (MYNativeWindow) return YES;
+    if (MYExperimentWindow) return NO;
+    CLKDevice *device = [CLKDevice currentDevice];
+    if (!device) return NO;
+    NSLog(@"Native controller PoC: initializing face, style=%ld", (long)style);
+    MYCustomFace *face = [[MYCustomFace alloc] _initWithFaceStyle:style forDevice:device];
+    return MYPresentNativeFace(face);
+}
+
+BOOL MYPresentRestoredLocalFaceExperiment(NSString *directoryPath) {
+    if (![NSThread isMainThread] ||
+        ![[NSBundle mainBundle].bundleIdentifier isEqualToString:@"dev.develodom.WatchFaceLab"]) return NO;
+    if (MYNativeWindow || MYExperimentWindow) {
+        NSLog(@"Restored preview PoC: dismiss the existing preview first");
+        return NO;
+    }
+    MYCustomFace *restored = MYRestoreLocalFaceBundle(directoryPath);
+    if (!restored) return NO;
+    NSLog(@"Restored preview PoC: presenting restored model=%@ style=%ld identifier=%@",
+          NSStringFromClass(restored.class), (long)restored.faceStyle, restored.bundleIdentifier);
+    if (!MYPresentNativeFace(restored)) return NO;
+    // Check we retained the exact restored object, not a newly created style-zero face.
+    if (MYNativeFace != restored) return NO;
+    NSLog(@"Restored preview PoC PASS: exact restored model hosted; activation remains explicit");
     return YES;
 }
 

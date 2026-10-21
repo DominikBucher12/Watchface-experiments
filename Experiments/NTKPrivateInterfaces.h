@@ -21,6 +21,7 @@
 - (NSString *)bundleIdentifier;
 - (NSInteger)faceStyle;
 - (NSDictionary *)JSONObjectRepresentation;
++ (BOOL)isRestrictedForDevice:(CLKDevice *)device;
 @end
 
 // Factory is inherited by NTKDigitalTimeLabel from ClockKitUI.
@@ -59,6 +60,10 @@
 - (Class)faceViewClass;
 - (NTKFace *)defaultFaceForDevice:(CLKDevice *)device;
 - (NTKFace *)faceFromData:(NSData *)data;
+- (NSArray<NTKFace *> *)galleryFacesForDevice:(CLKDevice *)device;
+- (NSString *)galleryTitleForDevice:(CLKDevice *)device;
+- (NSString *)galleryDescriptionForDevice:(CLKDevice *)device;
+- (id)galleryRowPrioritiesForDevice:(CLKDevice *)device;
 @end
 
 @interface NTKFaceBundleLoader : NSObject
@@ -73,3 +78,18 @@
 
 FOUNDATION_EXPORT NSString * const NTKFaceBundleIdentifierKey;
 FOUNDATION_EXPORT NSString * const NTKFaceBundleFaceTypeKey;
+
+@interface NTKGalleryCollection : NSObject
+- (NSString *)title;
+- (NSString *)descriptionText;
+@end
+
+@interface NTKFacesArrayGalleryCollection : NTKGalleryCollection
+- (NSUInteger)numberOfFaces;
+- (NTKFace *)faceAtIndex:(NSUInteger)index;
+@end
+
+@interface NTKFacesBundleArrayGalleryCollection : NTKFacesArrayGalleryCollection
+- (instancetype)initWithDevice:(CLKDevice *)device faceBundle:(NTKFaceBundle *)bundle;
+- (void)loadFaces;
+@end

@@ -277,3 +277,152 @@ explicitly, so successful new behavior does not silently change the old test.
 A pass establishes a minimal configuration round trip through the receiving bundle;
 custom edits, resource files, gallery eligibility and cross-process restoration
 remain separate tests.
+
+## Native presentation of the restored identified model
+
+Restart WatchFaceLab to use the rebuilt module. Bring it forward, pause, and run
+individually, checking each result before the next call:
+
+```lldb
+thread select 1
+expr -l objc++ -- (int)[NSThread isMainThread]
+process load /tmp/WatchFaceLab26-NTK/MYCustomFaceExperiment.dylib
+expr -l objc++ -- (int)MYPresentRestoredLocalFaceExperiment(@"/tmp/WatchFaceLab26-NTK/FaceBundles")
+continue
+```
+
+The main-thread check must return 1 and module loading must succeed. Expected:
+discovery and identity PASS logs, then native controller creation with style 44,
+and `Restored preview PoC PASS: exact restored model hosted`. Confirm the time
+and PoC label appear. This helper reuses the complete checked round trip and
+retains its returned model; it does not substitute a newly allocated face. It
+rejects an already open preview instead of reporting success for the wrong model.
+
+After successful presentation, pause on the main thread and request activation:
+
+```lldb
+thread select 1
+expr -l objc++ -- (int)MYSetNativeControllerExperimentActive(1)
+continue
+```
+
+After observing the time display, pause on the main thread and clean up:
+
+```lldb
+thread select 1
+expr -l objc++ -- (int)MYSetNativeControllerExperimentActive(0)
+expr -l objc++ -- (void)MYDismissNativeControllerExperiment()
+continue
+```
+
+Return values should be 1. Preserve all new diagnostics; on an exception or NO,
+stop before dependent steps and capture logs/backtrace. The prior native lifecycle
+success used style zero and does not establish this identified style-44 path.
+
+## Isolated gallery contract
+
+The local bundle now returns an identified style-44 model from defaultFaceForDevice:,
+provides a title/description, and exposes one face through galleryFacesForDevice:.
+The older discovery test therefore also creates a style-44 default face now.
+The independent style-zero preview entry point is unchanged.
+
+Restart WatchFaceLab before loading both updated artifacts. In the foreground
+app, pause and run individually:
+
+```lldb
+thread select 1
+expr -l objc++ -- (int)[NSThread isMainThread]
+process load /tmp/WatchFaceLab26-NTK/MYCustomFaceExperiment.dylib
+expr -l objc++ -- (int)MYInspectLocalFaceGallery(@"/tmp/WatchFaceLab26-NTK/FaceBundles")
+```
+
+Proceed only with a main-thread result of 1 and successful module loading. Expect
+the existing discovery PASS, followed by device restriction=0, nonempty metadata,
+rowPriorities=(null), and:
+
+```text
+Local gallery PoC PASS: faces=1 title=Custom Face PoC class=MYCustomFace style=44 identifier=dev.develodom.WatchFaceLab.LocalFaceBundle renderer=MYCustomFaceView
+```
+
+Return value 1 means the checked bundle contract completed. Paste the full log;
+on NO/exception preserve stage logs and `bt`. Use `continue` to resume the app.
+There is no new window or gallery UI. This tests the bundle's gallery-facing
+methods through the isolated loader, not global gallery discovery or acceptance
+by an NTK gallery collection. Row priorities use the verified nil base default;
+no priority schema or restriction bypass is invented.
+
+## Native gallery collection consumer
+
+Restart WatchFaceLab, bring it forward, pause, and run individually:
+
+```lldb
+thread select 1
+expr -l objc++ -- (int)[NSThread isMainThread]
+process load /tmp/WatchFaceLab26-NTK/MYCustomFaceExperiment.dylib
+expr -l objc++ -- (int)MYStartNativeGalleryCollection(@"/tmp/WatchFaceLab26-NTK/FaceBundles")
+continue
+```
+
+Proceed only after a thread result of 1 and successful module loading. A start
+result of 1 and `Native gallery PoC STARTED` mean metadata was accepted and native
+loadFaces was invoked; they do not mean faces finished loading. Resume the app
+for a few seconds to allow the native background load and main-queue publication.
+Then pause and check:
+
+```lldb
+thread select 1
+expr -l objc++ -- (int)MYCheckNativeGalleryCollection()
+```
+
+Expect one face in NTKFacesBundleArrayGalleryCollection, followed by
+`Native gallery PoC PASS` and return value 1. This reads the native collection's
+numberOfFaces/faceAtIndex:, not a direct return from our gallery override.
+The model must retain MYCustomFace class, style 44, correct identifier and valid
+JSON, and produce MYCustomFaceView with a timeView.
+
+If count is zero, preserve the logs. Zero can mean pending work or an empty/failed
+result; resume briefly and check once more. Do not spin in LLDB while the process
+is paused or repeatedly start new collections. If it remains zero or an exception
+occurs, capture logs and `bt`. No private completion method is guessed or invoked.
+
+After a successful check, release the experiment's ownership and resume:
+
+```lldb
+expr -l objc++ -- (void)MYReleaseNativeGalleryCollection()
+continue
+```
+
+This does not cancel pending work or assert deallocation. The native collection
+has an observer-removal path in dealloc; the helper does not manually invoke it.
+No gallery UI or installed system face is created by this test.
+
+### Preserve the native collection start fault
+
+The first start attempt reported EXC_BAD_ACCESS, although the collection later
+contained one valid face. A subsequent capture showed SIGSTOP and an idle run
+loop; it was not the faulting stack. LLDB may automatically unwind expression
+errors before ordinary backtrace commands can inspect them.
+
+In a fresh app process, load the module as above, then use this diagnostic start
+instead of the ordinary expression:
+
+```lldb
+thread select 1
+expr -l objc++ -u false -- (int)MYStartNativeGalleryCollection(@"/tmp/WatchFaceLab26-NTK/FaceBundles")
+```
+
+`-u false` is the installed LLDB's verified --unwind-on-error option. If it faults,
+do not continue or switch to thread 1. Capture the selected faulting thread:
+
+```lldb
+thread list
+thread backtrace all
+frame info
+register read rip rsp rbp
+disassemble --frame
+```
+
+Do not call the check/release helpers while diagnosing a preserved fault. After
+capturing output, restart the app for a clean process rather than treating LLDB
+unwinding as rollback. If it succeeds without a fault, preserve the full output;
+that is a non-reproduction, not proof of the original cause.
