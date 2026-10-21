@@ -12,6 +12,7 @@ xcrun --sdk watchsimulator clang \
   -fobjc-arc -fno-modules \
   -Wall -Wextra -Werror -g -dynamiclib \
   "$experiment_dir/MYCustomFace.m" "$ntk_binary" \
+  "$runtime_root/System/Library/PrivateFrameworks/ClockKitUI.framework/ClockKitUI" \
   -F"$runtime_root/System/Library/PrivateFrameworks" \
   -framework Foundation -framework UIKit -framework ClockKit -framework CoreGraphics \
   -install_name @rpath/MYCustomFaceExperiment.dylib \

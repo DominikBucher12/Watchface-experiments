@@ -17,9 +17,32 @@
 - (Class)faceViewClass;
 @end
 
+// Factory is inherited by NTKDigitalTimeLabel from ClockKitUI.
+@interface CLKUITimeLabel : UIView
++ (instancetype)labelWithOptions:(NSUInteger)options forDevice:(CLKDevice *)device;
+- (void)setFont:(UIFont *)font;
+@end
+
+@interface NTKDigitalTimeLabel : CLKUITimeLabel
+- (void)setTextColor:(UIColor *)color;
+@end
+
 @interface NTKFaceView : UIView
 - (instancetype)initWithFaceStyle:(NSInteger)style
                         forDevice:(CLKDevice *)device
                 clientIdentifier:(NSString *)clientIdentifier;
 + (instancetype)newFaceViewForFace:(NTKFace *)face;
+- (UIView *)timeView;
+- (void)setTimeView:(UIView *)timeView;
+- (UIView *)rootContainerView;
+@end
+
+// UIViewController superclass and these encodings verified in 23T570 metadata.
+@class NTKFaceViewController;
+@interface NTKFaceViewController : UIViewController
+- (instancetype)initWithFace:(NTKFace *)face
+               configuration:(void (^)(NTKFaceViewController *controller))configuration;
+- (NTKFaceView *)faceView;
+- (void)becomeActive;
+- (void)resignActive;
 @end

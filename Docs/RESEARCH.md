@@ -211,3 +211,144 @@ the installed runtime verified 15 expected hosting/discovery symbols and invento
 `/tmp/WatchFaceLab26-NTK`, outside the repository. No Apple binary or header was
 copied into the project. No app implementation, simulator runtime, global loader,
 face library, or system process was changed during this investigation.
+
+## Native-controller experiment implementation — 2026-10-21
+
+Re-read installed 23T570 x86_64 Objective-C metadata before adding declarations:
+
+| Evidence | Result |
+| --- | --- |
+| NTKFaceViewController superclass | UIViewController |
+| `initWithFace:configuration:` | `@32@0:8@16@?24` |
+| `faceView` | `@16@0:8` |
+| `becomeActive` / `resignActive` | `v16@0:8` |
+
+The block's sole explicit argument is the controller, verified in
+`configureWithDuration:block:` disassembly. The new initializer call passes nil;
+no unverified configuration setters are called.
+
+Added three explicitly invoked helpers in the standalone module:
+`MYPresentNativeControllerExperiment(style)`,
+`MYSetNativeControllerExperimentActive(active)`, and
+`MYDismissNativeControllerExperiment()`. Presentation creates the custom face,
+lets NTKFaceViewController create/configure its renderer, checks the renderer
+class, and hosts the native controller in a temporary app-owned window. Stage
+logs distinguish device retrieval, face initialization, native initialization,
+renderer validation, presentation, activation and dismissal. Both preview paths
+reject simultaneous presentation. The native path retains the face/controller
+and restores the previous key window during cleanup. It does not catch private
+initialization exceptions or add speculative subclass overrides.
+
+The updated module builds with warnings as errors and passes ad-hoc signature
+verification. Native runtime execution remains pending in the user's existing
+Xcode session; the old module requires an app restart before loading the update.
+See the native-controller section of `Docs/LLDB-EXPERIMENT.md` for staged calls.
+Native initialization, label visibility, teardown, explicit activation and repeated
+cycles are all untested at this point. The prior simple preview success does not
+establish these results. No system process or runtime file was modified; the
+SwiftUI app sources and Xcode project remain unchanged by this implementation.
+
+## Native controller execution and time-view implementation — 2026-10-21
+
+User-provided LLDB output confirms the native controller initialized with a nil
+configuration block, returned MYCustomFaceView at 208 x 248 bounds, returned YES
+from presentation, and completed dismissal/ownership release. It emitted
+`timeView is missing for faceView`. Explicit activation and deallocation remain
+unverified. No inference about deallocation is made from ownership release.
+
+The diagnostic originates in `-[NTKFaceView tritium_timeViews].cold.1` at
+0x479729. Its caller checks the cached NTKTritiumAnimator conformance flag and
+logs the diagnostic when false; it then checks the timeView and its protocol
+conformance before returning a list. Thus the wording can indicate a missing
+or nonconforming view; merely setting any UIView would not establish the contract.
+`setTimeView:` at 0x20ed42 retains the view and computes that conformance flag.
+
+Traced the built-in digital path:
+
+- `-[NTKDigitalFaceView _timeLabelOptions]` at 0x138f65 returns zero.
+- `_createTimeViewIfNecessary` at 0x1390ad sends
+  `+[NTKDigitalTimeLabel labelWithOptions:forDevice:]`, sets legibility/color and
+  a framework time offset, assigns the result via `setTimeView:`, and adds it to
+  `rootContainerView`.
+- Installed metadata says NTKDigitalTimeLabel inherits CLKUITimeLabel, which
+  inherits UIView. The factory is inherited from ClockKitUI, not implemented
+  directly on NTKDigitalTimeLabel.
+- ClockKitUI's `+[CLKUITimeLabel labelWithOptions:forDevice:]` at 0x2fa38 allocates
+  its receiver and invokes `initWithTimeLabelOptions:forDevice:`. Invoking the
+  inherited factory on NTKDigitalTimeLabel therefore allocates that subclass.
+
+Verified encodings in installed x86_64 metadata before calling:
+
+| Method | Encoding |
+| --- | --- |
+| `+[CLKUITimeLabel labelWithOptions:forDevice:]` | `@32@0:8Q16@24` |
+| `-[CLKUITimeLabel setFont:]` | `v24@0:8@16` |
+| `-[NTKDigitalTimeLabel setTextColor:]` | `v24@0:8@16` |
+| `-[NTKFaceView timeView]` | `@16@0:8` |
+| `-[NTKFaceView setTimeView:]` | `v24@0:8@16` |
+| `-[NTKFaceView rootContainerView]` | `@16@0:8` |
+
+MYCustomFaceView now creates this native time label with options zero and the
+same CLKDevice, sets a white 40-point monospaced font, assigns it as timeView,
+and places it in the native root container. Public UIView sizing/centering keeps
+it in the middle; the PoC label is smaller and below it. Both ordinary and native
+preview functions use this updated renderer. A nil factory result aborts renderer
+initialization rather than masking it with a plain label. No timer, private tick
+callback, custom protocol implementation, or guessed data-mode value was added.
+
+ClockKitUI is linked directly from the installed runtime. The updated module
+builds with warnings as errors, passes signature verification and diff whitespace
+checks, and `otool -L` reports system install paths for both private frameworks.
+No Apple binaries/headers were copied. The working SwiftUI app is untouched.
+
+Pending runtime validation: restart the app before loading the rebuilt module;
+verify the `assigned timeView=NTKDigitalTimeLabel` log, absence of the missing
+view diagnostic, visible current time and PoC label, and clean dismissal. Observe
+a minute boundary to check whether time advances under native management. Then
+try explicit activation/deactivation separately. Font/layout, protocol acceptance,
+clock advancement, snapshots and always-on behavior are not established by build
+success. Framework debug time offsets and legibility styling from the complete
+built-in renderer are intentionally not reproduced in this minimal experiment;
+nondefault framework offset behavior remains untested.
+
+
+## Time label result and LLDB expression correction — 2026-10-21
+
+User output confirms native presentation with `assigned timeView=NTKDigitalTimeLabel`,
+MYCustomFaceView bounds 208 x 248, and return YES. The prior missing-timeView
+diagnostic is absent from the supplied output. Time advancement and explicit
+activation remain unverified.
+
+The attempted activation expression failed to compile because LLDB found
+ambiguous BOOL typedefs; YES also expands through BOOL. Thus the activation helper
+was not called, and the user correctly stopped before deactivation. Updated the
+console instructions to `(int)MYSetNativeControllerExperimentActive(1)` and the
+corresponding call with 0. These avoid explicit BOOL references and YES/NO macros
+without changing the compiled function signature or bypassing ABI checks. This
+is a debugger-expression issue, not evidence of native activation failure.
+
+## First successful explicit native activation cycle — user-reported, 2026-10-21
+
+Using the corrected LLDB expressions, the user reported:
+
+```text
+MYSetNativeControllerExperimentActive(1):
+Native controller PoC: entering becomeActive
+Native controller PoC: explicit activation request completed, active=1
+return (int) 1
+MYSetNativeControllerExperimentActive(0):
+Native controller PoC: entering resignActive
+Native controller PoC: explicit activation request completed, active=0
+return (int) 1
+MYDismissNativeControllerExperiment():
+Native controller PoC: beginning dismissal
+Native controller PoC: preview ownership released
+```
+
+This establishes completion of one explicit native activation/deactivation and
+dismissal cycle in the app host. No failure appears in the supplied output.
+Clock advancement across a minute boundary, repeated cycles, deallocation, and
+always-on behavior were not separately reported and remain unverified.
+The next implementation milestone is an app-local NTKFaceBundle and isolated
+loader, with exact declarations verified before use. This does not authorize
+system process injection or simulator runtime modification.

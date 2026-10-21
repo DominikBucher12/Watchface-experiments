@@ -14,3 +14,9 @@ FOUNDATION_EXPORT MYCustomFaceView *MYCreateCustomFaceView(NSInteger style,
 // Main-thread, explicitly invoked app-only preview. No registration or persistence.
 FOUNDATION_EXPORT BOOL MYPresentCustomFaceExperiment(NSInteger style);
 FOUNDATION_EXPORT void MYDismissCustomFaceExperiment(void);
+
+// Native controller path. Dismiss the ordinary preview before invoking this.
+// Activation is a separate experiment after successful presentation/teardown.
+FOUNDATION_EXPORT BOOL MYPresentNativeControllerExperiment(NSInteger style);
+FOUNDATION_EXPORT BOOL MYSetNativeControllerExperimentActive(BOOL active);
+FOUNDATION_EXPORT void MYDismissNativeControllerExperiment(void);
