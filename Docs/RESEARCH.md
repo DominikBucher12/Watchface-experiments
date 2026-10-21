@@ -997,3 +997,84 @@ it and verify the original manager class and lookup behavior return. Keep the
 system-only bridge guard intact and expose any owned-host experiment separately.
 This demonstrates in-process integration only. System gallery visibility and
 cross-process persistence remain separate, unpassed gates.
+
+
+### Owned shared discovery experiment prepared — 2026-10-22
+
+Added MYOwnedDiscovery.m as a separate compile-time host-scoped build of the
+existing bridge, with distinct exports and subclass name. The default system
+bridge retains its exact com.apple.clockface guard. The owned variant accepts
+only dev.develodom.WatchFaceLab, the inspected x86_64 runtime UUID, main thread,
+and verified manager method encodings. No application target/entry point changed.
+
+Start captures the native shared-manager enumeration with the custom identifier
+absent, installs one instance subclass, checks original entries plus exactly one
+custom entry, and creates NTKFacesBundleArrayGalleryCollection from the shared
+manager's custom lookup. Check validates its asynchronously loaded model,
+identifier/style/JSON, renderer and native time view. Remove restores the class
+and compares enumeration and absent custom lookup with baseline; it separately
+reports whether consumption passed. Failures after install require cleanup or
+process restart. No runtime success has yet been observed for this new variant.
+
+Rechecked sharedManager's installed disassembly: its once-block at 0x16564c
+allocates and calls _init directly; unlike the remote-complication singleton,
+this immediate path has no CLKRunningInProcess gate. That does not establish
+that all downstream manager initialization/services work in the owned host.
+Potential blockers include those dependencies, async gallery timing, concurrent
+native manager use while changing the instance class, and the earlier unresolved
+LLDB expression fault. Enumeration can also change independently of this hook;
+a removal snapshot mismatch must not be misreported as proven failed class
+restoration. No full ClockFace server/controller startup is requested here.
+
+Validation: all four experiment artifacts built with -Wall -Wextra -Werror;
+nm confirms the three owned experiment entry points. Runtime acceptance remains
+pending the explicit cycle in Docs/OWNED-DISCOVERY.md. Loaded runtime classes and
+in-flight native work survive cleanup until process exit; do not unload dylibs.
+
+
+## User-verified result — PID 10520
+
+The reported LLDB cycle returned 1 from start, check, and removal. Native baseline
+contained 58 bundles. The hook reported exactly one custom identifier and matching
+lookup; the native gallery produced the identified custom model, renderer and
+NTKDigitalTimeLabel. Removal reported original manager class restored and
+`class/enumeration/absent-lookup restored=1; consumptionPassed=1; fullCyclePassed=1`.
+The app resumed. This passes the owned-process milestone, not system visibility.
+
+During native discovery, the framework logged missing ExtractedBundles/23T570
+and AppleInternal paths, skipped NTKCharacterFaceBundle for missing NSPrincipalClass,
+and reported a duplicate NTKTimeFontTypographicBounds class in Apple's Parmesan
+and Warlock bundles. It also emitted a BigNumeralsDigital wrong-initializer warning.
+These did not prevent this cycle's acceptance checks. Their broader effects are
+unknown; do not delete/rename Apple classes or create missing system paths merely
+to silence them. No crash was reported in this cycle, which does not resolve the
+earlier intermittent expression fault.
+
+Next research scope: read-only mapping of system-host discovery inputs and
+selection/persistence consumers. Owned-manager interception is process-local;
+this evidence does not establish cross-process discovery, registration, system
+face selection or durable installation. Original ClockFace attach denial and the
+renamed host's identity gate remain separate barriers. Do not repeat local PoCs
+as a substitute for establishing that boundary.
+
+
+### Persistent library path mapped statically — 2026-10-22
+
+The installed NanoTimeKit client creates NTKPersistentFaceCollection with
+collection identifier `LibraryFaces`. It connects to `com.apple.nanotimekit.collectionserver`,
+configures NTKCollectionServer/NTKCollectionClient XPC interfaces, resumes and
+registers. The watchOS 26.5 simulator launchd plist
+`System/Library/LaunchDaemons/com.apple.nanotimekitd.plist` declares that Mach
+service in nanotimekitd. Client full-load IPC transfers ordered UUIDs, selected
+UUID and instance descriptors; callbacks reconstruct NTKFace instances. Add
+(descriptor+UUID, update type 1), selection (UUID, update type 5), remove, order,
+and configuration/resource changes are separate queued XPC mutations with
+sequence IDs. The AddableFaces collection is separate staging/preferences state.
+Details and evidence addresses are in SYSTEM-PERSISTENCE.md.
+
+This identifies the daemon as owner of authoritative library state but does not
+establish its authorization rules, persistence format, class/image loading in all
+clients, or acceptance criteria. No XPC mutation was sent. A normal ClockFace
+registration/load observation on the disposable simulator and daemon-side static
+analysis remain the next read-only checks. Cross-process custom restoration is
+not established.

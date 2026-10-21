@@ -46,3 +46,16 @@ xcrun --sdk watchsimulator clang \
   -o "$output_dir/MYClockFaceBridge.dylib"
 codesign --force --sign - "$output_dir/MYClockFaceBridge.dylib"
 printf '%s\n' "$output_dir/MYClockFaceBridge.dylib"
+
+# Owned-app shared discovery; separate exports and host guard from the system bridge.
+xcrun --sdk watchsimulator clang \
+  -target x86_64-apple-watchos26.5-simulator -isysroot "$sdk_path" \
+  -fobjc-arc -fno-modules -Wall -Wextra -Werror -g -dynamiclib \
+  "$experiment_dir/MYOwnedDiscovery.m" "$output_dir/MYCustomFaceExperiment.dylib" "$ntk_binary" \
+  -F"$runtime_root/System/Library/PrivateFrameworks" \
+  -framework Foundation -framework UIKit -framework ClockKit \
+  -Wl,-rpath,@loader_path \
+  -install_name @rpath/MYOwnedDiscovery.dylib \
+  -o "$output_dir/MYOwnedDiscovery.dylib"
+codesign --force --sign - "$output_dir/MYOwnedDiscovery.dylib"
+printf '%s\n' "$output_dir/MYOwnedDiscovery.dylib"

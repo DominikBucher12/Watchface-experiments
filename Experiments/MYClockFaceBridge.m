@@ -10,6 +10,13 @@
 #error This bridge is restricted to the inspected x86_64 watch simulator.
 #endif
 
+#ifndef MY_BRIDGE_HOST_IDENTIFIER
+#define MY_BRIDGE_HOST_IDENTIFIER @"com.apple.clockface"
+#endif
+#ifndef MY_BRIDGE_CLASS_NAME
+#define MY_BRIDGE_CLASS_NAME "MYClockFaceSessionBundleManager"
+#endif
+
 static NSString *const MYIdentifier = @"dev.develodom.WatchFaceLab.LocalFaceBundle";
 static NTKFaceBundleManager *MYManager;
 static NTKFaceBundle *MYBundle;
@@ -44,7 +51,7 @@ static BOOL MYExpectedImage(void) {
 
 static BOOL MYContext(void) {
     if (![NSThread isMainThread] ||
-        ![[NSBundle mainBundle].bundleIdentifier isEqualToString:@"com.apple.clockface"] ||
+        ![[NSBundle mainBundle].bundleIdentifier isEqualToString:MY_BRIDGE_HOST_IDENTIFIER] ||
         !MYExpectedImage()) {
         NSLog(@"ClockFace bridge: rejected host/thread/runtime identity");
         return NO;
@@ -122,8 +129,8 @@ BOOL MYClockFaceBridgeInstall(NSString *directoryPath) {
     Method lookup = class_getInstanceMethod(original,
         @selector(faceBundleForBundleIdentifier:onDevice:forMigration:));
     if (!MYBridgeClass) {
-        if (objc_lookUpClass("MYClockFaceSessionBundleManager")) return NO;
-        Class bridge = objc_allocateClassPair(original, "MYClockFaceSessionBundleManager", 0);
+        if (objc_lookUpClass(MY_BRIDGE_CLASS_NAME)) return NO;
+        Class bridge = objc_allocateClassPair(original, MY_BRIDGE_CLASS_NAME, 0);
         if (!bridge) return NO;
         if (!class_addMethod(bridge, method_getName(enumerate), (IMP)MYEnumerate, method_getTypeEncoding(enumerate)) ||
             !class_addMethod(bridge, method_getName(lookup), (IMP)MYLookup, method_getTypeEncoding(lookup))) {
