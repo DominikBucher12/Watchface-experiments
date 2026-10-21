@@ -32,6 +32,12 @@ callback side maintains sequence identifiers and can enqueue updates while daemo
 notifications are suspended. The XPC server therefore owns the authoritative
 library state and feeds copies back to clients.
 
+The client configures concrete `NSXPCInterface` class allowlists. For the server
+callback that loads a full collection, the faces-by-UUID argument allows an
+`NSDictionary` containing `NSUUID` keys and `NTKFaceInstanceDescriptor` values;
+the ordered UUID list allows `NSArray` and `NSUUID`. This documents the expected
+wire object types, not which processes are authorized to connect.
+
 The addable collection is a separate client staging path. Its initializer uses
 collection identifier `AddableFaces`, loads content from the shared face bundle
 manager, tracks existing library faces and their descriptors, and observes bundle
@@ -61,6 +67,14 @@ coordinator's `checkoutStoreForCollectionIdentifier:deviceUUID:withHandler:`.
 The inspected listener method contains no sender identity check. This is a
 method-local observation only: it does not establish that launchd, XPC interface
 validation, registration, or individual store operations lack authorization.
+The disassembly of this method shows it queues connection setup and returns
+`YES`; `NTKDCollectionClient registerForCollectionIdentifier:deviceUUID:withSeqId:`
+then dispatches the checkout through the coordinator. No sender-entitlement branch
+was visible in those inspected methods. This is still only a method-local result.
+The launchd plist exposes several NanoTimeKit Mach services but has no explicit
+client allowlist key. A `codesign -d --entitlements` inspection of this simulator
+daemon emitted an invalid-entitlements-blob warning, so it did not establish the
+daemon's effective entitlements or the service's client policy.
 
 The `NTKDCollectionClient` exposes registration and separate queued mutation
 methods for add, remove, reorder, configuration/resource updates, and selection.
@@ -81,21 +95,56 @@ stored face data. The manifest tracks ordered UUIDs and boxed face styles; its
 `addUUID:withFaceStyle:` returns false when that UUID is already present, which
 gates the queued add. The store writes selected UUID state to a file named
 `selected-uuid.string`, and its path-building helper appends `Faces/<UUID>` below
-a store directory. The binary also contains the `CollectionStores` directory
-component, but this pass has not established the complete absolute backing path.
-The inspected add path persists the representation; it does not itself show the
-daemon reconstructing an `NTKFace` from the custom class.
+a store directory. The initializer builds this directory below
+`_NTKHomeDirectory()/CollectionStores/<device UUID>/<collection identifier>`;
+the nil-device branch uses `CollectionStores/GlobalStores/<collection
+identifier>`. Each face stores `Faces/<UUID>/face.json`; the manifest file is
+`manifest.plist`. The home directory helper's fully resolved on-disk location
+depends on the daemon's runtime context and was not evaluated.
 
-This static pass has not identified a sender authorization rule or the complete
-durable backing path. Nor does it show whether the persisted descriptor can be
-reconstructed by an unrelated client process. The next safe step is to finish
-tracing store initialization and the client-side descriptor reconstruction path,
-then inspect the normal ClockFace registration/load path using only read-only
-observation. The original ClockFace attach restriction still prevents direct
-observation; the disposable renamed host is not equivalent, since its ClockKit
-identity gate already failed during scene startup. Before any future persistence
-experiment, first identify a reversible daemon operation or a complete simulator
-snapshot/restore procedure and verify every consumer's class-loading path.
+The store read path is also present: it reads `face.json` as data, parses JSON,
+then calls NanoTimeKit's verified
+`+[NTKFace faceWithJSONObjectRepresentation:forDevice:forMigration:allowFallbackFromInvalidFaceStyle:]`
+with `+[CLKDevice currentDevice]`, migration enabled, and fallback from invalid
+face style enabled. It then sets the face resource directory. For bundle-style
+representations, this factory consults `NTKFaceBundleManager`'s shared manager
+using the serialized bundle identifier and device, and obtains `faceClass` from
+the matching bundle (the migration path uses the manager's migration lookup).
+The manager first checks its bundle cache, then calls its loader's verified
+`loadFaceBundleWithIdentifier:` method on a cache miss and caches a returned
+bundle. Thus daemon-side reconstruction depends on the custom bundle being
+discoverable by the daemon's loader and its principal class being available.
+The loader's search roots have now been traced statically. The manager builds a
+directory list from `NTKBundleLoader rootDirectory`, which returns the
+`IPHONE_SIMULATOR_ROOT` environment value (or an empty string when unset),
+appending `/System/Library/NanoTimeKit/FaceBundles/`; when the
+`NanoTimeKitExtras/internal_face_bundles` feature is enabled, it also adds
+`/AppleInternal/Library/NanoTimeKit/FaceBundles/`. Internal builds can add
+`/AppleInternal/Library/NanoTimeKit/FaceSupport/UnencryptedBundles/` when the
+corresponding feature is enabled. Otherwise, the manager adds the Argon
+extractor path plus its build version. These URLs are passed to
+`NTKFaceBundleLoader initWithURLs:`. The loader enumerates bundles from each
+supplied directory; no app container, arbitrary injected directory, or `/tmp`
+path is added by this manager. Thus the app-local bundle used by WatchFaceLab
+is not shown to be discoverable by the daemon's normal manager. Cross-process
+custom subclass reconstruction remains unproven and is not expected for a
+bundle placed solely under `/tmp` using the traced default roots.
+
+This static pass has not identified a collection-server sender authorization
+rule or evaluated the daemon's home directory on disk. The simulator daemon's
+embedded entitlements could not be reliably decoded by `codesign`. A separate entitlement
+check found in `NTKComplicationPushManager` applies to its complication-push
+listener and checks `aps-environment`; it is not evidence of collection-server
+authorization. Nor does this show whether the persisted
+representation can resolve a third-party custom subclass. The remaining safe
+step is to determine whether a supported, non-system-modifying path can make a
+custom bundle visible to a separate watchOS process, and to continue static
+inspection of collection-server authorization. The original ClockFace attach
+restriction still prevents direct observation; the disposable renamed host is
+not equivalent, since its ClockKit identity gate already failed during scene
+startup. Before any future persistence experiment, first identify a reversible
+daemon operation or a complete simulator snapshot/restore procedure and verify
+every consumer's class-loading path.
 
 ## Static evidence and limits
 
@@ -118,13 +167,36 @@ snapshot/restore procedure and verify every consumer's class-loading path.
   at 0x249c8; coordinator checkout at 0xff93. Curator add callback at 0x4885;
   helper that optionally selects after adding at 0x4a1c. Addresses are unslid
   x86_64 addresses from the installed `nanotimekitd` executable.
-- The listener method itself has no visible sender identity check. Global or
-  per-operation authorization remains unverified. The manifest rejects duplicate
+- The collection-server listener method queues setup and returns `YES`; its
+  registration method dispatches store checkout, with no sender-entitlement
+  branch visible in those inspected methods. The launchd plist exposes the
+  collectionserver Mach service without a client allowlist key. `codesign` could
+  not reliably decode the daemon's embedded entitlements. The entitlement check
+  in the separate complication-push listener is unrelated. Global or
+  per-operation authorization remains unverified. The
+  manifest rejects duplicate
   UUIDs and records face styles. The add path serializes a face JSON
-  representation. Complete durable path and cross-process descriptor
-  reconstruction remain unverified. Identified path components are
-  `CollectionStores`, `Faces`, and the per-face UUID; selected UUID data uses
-  `selected-uuid.string`.
+  representation. Store root is derived from `_NTKHomeDirectory()` and uses
+  `CollectionStores/<device UUID>/<collection identifier>` (or the
+  `GlobalStores` branch when device UUID is nil); each face uses
+  `Faces/<UUID>/face.json`. Reload parses the JSON and calls the verified
+  `NTKFace` reconstruction selector with the current device, migration, and
+  invalid-style fallback options. Whether a custom subclass can resolve remains
+  unverified. Selected UUID data uses `selected-uuid.string`.
+- XPC interface allowlists full-collection replies as arrays of UUIDs and a
+  dictionary mapping UUIDs to `NTKFaceInstanceDescriptor` objects. The face JSON
+  factory consults the shared `NTKFaceBundleManager` by bundle identifier and
+  device before using a bundle's `faceClass`; a cache miss invokes the manager
+  loader's `loadFaceBundleWithIdentifier:`. Its directory list is based on
+  `NTKBundleLoader rootDirectory` (the `IPHONE_SIMULATOR_ROOT` environment value)
+  plus `/System/Library/NanoTimeKit/FaceBundles/`,
+  with feature- and build-dependent AppleInternal/Argon roots. The normal list
+  contains no arbitrary app container or `/tmp` path, so discovery of an
+  app-local-only test bundle by the daemon is not supported by this trace.
+- Launchd plist: service runs as `mobile`, with `POSIXSpawnType=Adaptive`,
+  `RunAtLoad=true`, and the collectionserver Mach service enabled. The plist has
+  no client allowlist key; this does not rule out launchd/XPC entitlement or
+  code-signing checks enforced elsewhere.
 
 All addresses refer to the installed watchOS 26.5 x86_64 simulator runtime.
 Historical `mrdka.txt` is used only as a disassembly text file; no Apple binary or

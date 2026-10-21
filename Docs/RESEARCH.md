@@ -12,6 +12,33 @@ These observations are from the user's own `otool`/`llvm-objdump` output, **not*
 - `-[NTKFace _initWithFaceStyle:forDevice:]` calls super init, `_commonInit`, and complication observer setup.
 - `_commonInit` creates internal state; no claim is made that arbitrary subclasses can initialize safely without further checks.
 
+## Supported app-to-system face route assessment — 2026-10-22
+
+Apple's public ClockKit surface includes `CLKWatchFaceLibrary.addWatchFace(at:)`,
+which imports a `.watchface` file from an app bundle or downloaded file. Apple's
+watch-face guidance describes these as configurations of existing system faces,
+including their styles, colors, images, and complications. This is a supported
+way to share a configured face, but it does not provide an API for registering
+an app-defined `NTKFace` subclass or renderer. Sources:
+
+- [Watch faces HIG](https://developer.apple.com/design/human-interface-guidelines/watch-faces)
+- [CLKWatchFaceLibrary](https://developer.apple.com/documentation/clockkit/clkwatchfacelibrary)
+- [addWatchFace(at:completionHandler:)](https://developer.apple.com/documentation/clockkit/clkwatchfacelibrary/addwatchface%28at%3Acompletionhandler%3A%29)
+
+The repository's Xcode project has one watchOS application target and no watch
+extension or app-group configuration. Separately, the installed NanoTimeKit
+daemon loader roots traced in `Docs/SYSTEM-PERSISTENCE.md` do not include an app
+container or arbitrary shared directory. No supported app-managed installation
+path was identified that makes a custom renderer discoverable in another
+watchOS process. This is a bounded finding from the current public API/project/
+runtime review, not a claim that no private mechanism exists.
+
+ClockFace attachment was denied before the prepared session bridge loaded; see
+`Docs/CLOCKFACE-BRIDGE.md`. Do not bypass the target's attach policy. Further
+system-gallery research requires an Apple-authorized debug environment or a
+public custom-face extension point. Persistent face-library mutations remain
+unattempted.
+
 ## Gate for next experiment
 
 1. Confirm the public baseline app builds and launches in an **x86_64** watchOS 26.5 simulator.
