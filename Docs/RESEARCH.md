@@ -185,3 +185,29 @@ MYDismissCustomFaceExperiment on the main thread and verify the original SwiftUI
 clock returns. Repeated presentation/dismissal and app restart are useful lifecycle
 checks before expanding beyond this minimal in-app milestone. System process
 injection and runtime changes remain outside the authorized experiment.
+
+## Visual confirmation and hosting/discovery investigation — 2026-10-21
+
+The user explicitly confirmed that preview display and dismissal work. The
+allocation, visible-label, and return-to-SwiftUI milestones are now user-verified.
+Three lifecycle cycles and a repeat in a fresh app process are still pending
+user execution in the existing debugger. No automated result is claimed.
+
+See `Docs/HOSTING-AND-DISCOVERY.md` for the current evidence and next experiment
+design. A fresh disassembly and installed bundle plists were read without
+modifying the runtime. NanoTimeKit x86_64 UUID is
+`BA6B817D-D837-37DA-9BD1-DB2D1FC9CAD3`.
+
+Key findings: native hosting uses NTKFaceViewController; its configuration
+argument is a block (`@?`), not a configuration object. ClockFace imports
+NTKClockViewController, which constructs the face controller. Discovery uses
+NTKFaceBundleLoader, NSPrincipalClass and bundle/container classes, plus device
+restriction checks. A standalone face/view dylib does not implement that bundle
+identity and gallery contract. Registration remains unproved.
+
+Added the read-only `Experiments/inspect-runtime.py` collector. Running it against
+the installed runtime verified 15 expected hosting/discovery symbols and inventoried
+60 bundle directories (59 root Info.plists). Its JSON report is generated under
+`/tmp/WatchFaceLab26-NTK`, outside the repository. No Apple binary or header was
+copied into the project. No app implementation, simulator runtime, global loader,
+face library, or system process was changed during this investigation.
