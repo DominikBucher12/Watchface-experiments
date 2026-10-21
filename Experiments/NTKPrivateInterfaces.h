@@ -93,3 +93,13 @@ FOUNDATION_EXPORT NSString * const NTKFaceBundleFaceTypeKey;
 - (instancetype)initWithDevice:(CLKDevice *)device faceBundle:(NTKFaceBundle *)bundle;
 - (void)loadFaces;
 @end
+
+@interface NTKFaceBundleManager : NSObject
++ (instancetype)sharedManager;
+- (void)enumerateFaceBundlesOnDevice:(CLKDevice *)device
+                   includingLegacy:(BOOL)includingLegacy
+                         withBlock:(void (^)(NTKFaceBundle *bundle))block;
+- (NTKFaceBundle *)faceBundleForBundleIdentifier:(NSString *)identifier
+                                       onDevice:(CLKDevice *)device
+                                   forMigration:(BOOL)migration;
+@end

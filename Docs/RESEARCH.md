@@ -826,3 +826,174 @@ Docs/INTEGRATION-PROPOSAL.md. This is a proposal, not a ready executable bridge;
 no system process was attached or changed. No application implementation changed
 in this research pass. The next engineering work is preparing the opt-in bridge
 and verified rollback, followed by specific approval before system execution.
+
+## ClockFace bridge prepared; system execution pending — 2026-10-21
+
+Prepared Experiments/MYClockFaceBridge.m and a separately built signed dylib.
+The implementation improves on the loader replacement proposal by changing only
+the shared-manager instance's class to a no-ivar subclass, supplementing bundle
+enumeration and exact-identifier lookup while forwarding all native requests.
+It does not edit the original loader, search paths or manager cache dictionaries.
+
+Reverified encodings: enumeration v36@0:8@16B24@?28; identifier/device/migration
+lookup @36@0:8@16@24B32; loader getter/shared-manager getter @16@0:8. Traced loader
+class enumeration block to allocation of bundle instances at 0x388cd, confirming
+that manager enumeration callbacks receive instances, not Class values.
+
+The bridge validates simulator architecture, exact loaded NTK UUID, main thread,
+ClockFace identifier, original manager class, method encodings, bundle identity
+and path. Install/remove are explicit and reject unexpected runtime class state.
+No constructor runs. Removing restores the original manager class; loaded images
+and in-flight callbacks can outlive bridge removal, so process restart is the
+fallback for uncertain state. Existing gallery objects are not automatically
+retracted or refreshed. The check proves shared enumeration/identifier resolution
+only, not visible system gallery or persistent installation.
+
+Module/local bundle/bridge build with warnings as errors. Strict bridge signature
+verification, platform inspection, export inspection and whitespace checks passed.
+The bridge has NOT been loaded or run in ClockFace; no system attach or mutation
+was performed. Reviewable intervention, commands, limits and rollback are in
+Docs/CLOCKFACE-BRIDGE.md. Specific execution approval is still required under the
+user's original system-process boundary.
+
+## Approved ClockFace attach attempt blocked by hardened target policy
+
+The user explicitly approved the prepared preflight/install/check/remove cycle.
+Rechecked the bridge's strict signature and identified the booted simulator
+ClockFace process as PID 5460 (com.apple.clockface); Carousel was PID 5271 and
+was not targeted. Attempted `xcrun lldb -p 5460` outside the workspace sandbox.
+LLDB rejected attachment with `Not allowed to attach to process`. The redundant
+LLDB session was closed. No process load, preflight, install, check, or remove
+function ran; no ClockFace manager class or runtime file changed.
+
+Read-only host logs confirm the cause. Kernel/AppleMobileFileIntegrity at
+2026-10-21 23:58:47 UTC reported:
+
+```text
+macOSTaskPolicy: (com.apple.debugserver) may not get the task control port of (ClockFace) (pid: 5460): (ClockFace) is hardened, (ClockFace) doesn't have get-task-allow, (com.apple.debugserver) is a declared debugger(com.apple.debugserver) is not a declared read-only debugger
+```
+
+Debugserver logs independently show task_for_pid(5460) returning kernel failure
+0x5. A later generic debugserver line said `Attach succeeded, ready to debug`,
+but its task-port failures, shutdown, kernel policy records and LLDB's explicit
+attach failure establish that no usable attachment occurred.
+
+A read-only codesign entitlement display on the installed ClockFace binary warned
+of an invalid entitlements blob and printed no usable entitlement dictionary.
+That output alone is not treated as a complete entitlement inventory. The kernel
+policy message is the direct evidence for hardened state and missing
+get-task-allow at the denied attachment.
+
+This is an environment access blocker, not a failure of the bridge implementation
+or the completed local PoC. No sudo-based retry, entitlement alteration,
+re-signing, security-policy change, alternate system target injection, or runtime
+patch was attempted. Those actions were excluded by the approved execution plan.
+Further system execution requires a separately reviewed approach to obtaining a
+debuggable research host/target; more local renderer checks will not resolve this
+attach-policy denial. The prepared bridge remains unexecuted in ClockFace.
+
+## Debuggable research-target strategy — 2026-10-22
+
+User requested a strategy/milestone and practical debugging-security guidance.
+Added Docs/DEBUGGABLE-TARGET.md, Docs/MILESTONES.md and the preparation-only script
+Experiments/prepare-debug-target.py. Prepared a separate current-runtime ClockFace
+copy at /tmp/WatchFaceLab26-DebugTarget/ClockFaceResearch.app with unique identifier
+dev.develodom.WatchFaceLab.ClockFaceResearch. The script removes copied advertised
+system service names and hidden-app tags and supplies only debugging/library-
+validation exceptions, not private Apple service entitlements. It signs the copy
+ad hoc with hardened runtime. No original system executable is re-signed.
+
+Strict signature verification succeeded. Signed entitlements display confirms
+com.apple.security.get-task-allow, get-task-allow and
+com.apple.security.cs.disable-library-validation are true. Original runtime
+executable/plist hashes were unchanged. No simulator install, launch or attach of
+this copy was performed. Those are the next disposable-device gates, not claimed
+results. Current ClockFace bridge intentionally rejects the copy's identifier;
+explicit research-host adaptation is deferred until target viability is known.
+
+Official Apple debugging entitlement/hardened-runtime documentation was consulted
+and linked in the strategy document. It supports the development signing approach
+but does not guarantee watchOS simulator ClockFace can run as a separately signed
+app. Loss of platform/private-service identity, hardcoded service access and early
+launch failure remain real unknowns. No SIP/AMFI changes, sudo-based policy bypass,
+runtime remount, original-app re-signing or Carousel injection was attempted.
+
+## Disposable research target installed and debugged — 2026-10-22
+
+Created/booted WatchFaceLab26 Research, UDID
+E8757D97-8E48-479E-AD1C-9D8ADC8F5E5D (Series 11 46mm / watchOS 26.5).
+The existing simulator and original system ClockFace were not changed.
+
+Observed/fixed only in the prepared copy and reproducible preparation script:
+
+1. Installer required WKApplication or WKWatchKitApp=true. Added WKApplication
+   and WKWatchOnly, matching the owned standalone app packaging.
+2. simctl's advertised --arch flag was rejected as an invalid device. Used
+   --wait-for-debugger without it; LLDB verified x86_64 architecture.
+3. First launch died with AMFI restricted-entitlement error -424. Removing the
+   unprefixed get-task-allow key while retaining macOS debug exceptions allowed
+   launch. This is an empirical narrowing, not a general entitlement policy claim.
+4. Hardened-copy PID 10115 attached successfully, then trapped in dyld image
+   notification. Kernel logs and its crash report confirmed a code-signing invalid
+   debugger-modified dyld page (code 50). Terminated only this research copy.
+5. Re-signed the copy with --options 0 (non-hardened); installed and launched PID
+   10139. LLDB attached and reached UIApplicationMain. The script now uses that
+   signing mode with only macOS get-task-allow/library-validation exceptions.
+
+Full app initialization subsequently trapped in NanoTimeKit. Reproduced under
+LLDB in research-copy PID 10178: EXC_BAD_INSTRUCTION at
+ComplicationServicesServer.init(device:) + 525, unslid 0x3ec00d, ud2. Stack contains
+NTKClockViewController initWithStatusViewControllerClass: +2457 and ClockFace scene
+setup. Installed disassembly shows a call to NTKSharedRemoteComplicationProvider
+at 0x3ebe60, a nil test and conditional jump to that trap. The provider calls
+NTKRemoteComplicationManager.sharedInstance. Its nil cause remains unverified;
+no assumption is made that merely adding a particular entitlement fixes it.
+
+The debugger/target-access gate is passed for the separate copy; full system-like
+scene startup is not. No bridge hooks ran, no private privilege was invented, no
+trap patched, and no system process/runtime binary was modified. Original binary
+and plist SHA-256 values were rechecked unchanged. The disposable simulator and
+installed copy remain available for further research; launch/crash PIDs are
+historical and must not be reused blindly. Preparation.json and Simulator.json
+under the temporary output record current artifact and device state.
+
+Updated DEBUGGABLE-TARGET.md with the actual working launch/signing recipe and
+native service blocker, superseding its earlier untested three-entitlement,
+hardened-copy recipe. Next independent question: remote-complication manager
+initialization in a renamed host, or use an owned native host for shared-manager
+bridge integration without full ClockFace server initialization.
+
+
+### Renamed-host startup boundary traced — 2026-10-22
+
+Read-only analysis of the installed watchOS 26.5 x86_64 binaries establishes:
+
+- NanoTimeKit `___46+[NTKRemoteComplicationManager sharedInstance]_block_invoke`
+  at 0x1fb169 first calls NTKIsUnitTests. If false, it calls
+  CLKRunningInProcess with mask 0x38 at 0x1fb17b. If false, it returns without
+  constructing the singleton (0x1fb182 -> 0x1fb1a5). dispatch_once means this
+  decision is cached for that process. Allocation happens at 0x1fb184.
+- ClockKit CLKRunningInProcess at 0x484fc interprets 0x38 as the union of
+  Carousel (0x08), ClockFace (0x10), and NanoSettings (0x20).
+- ClockKit ___CLKIsClockFaceApp_block_invoke at 0x47c18 sends mainBundle,
+  bundleIdentifier, and isEqualToString: with `com.apple.clockface`.
+  Selector references are at 0xc5ed0, 0xc5ed8, 0xc5e28; the CFString object
+  is at 0xb24a0. The corresponding blocks compare `com.apple.Carousel` and
+  `com.apple.NanoSettings`. Resolved the Mach-O selector/CFString pointers
+  directly because otool's annotated output mislabels these references.
+
+Together with the captured nil-provider trap, this explains why the uniquely
+renamed ClockFace copy cannot follow this normal initialization path. This is
+an identity gate, not evidence of a missing service entitlement. No runtime
+predicate values were forced, no singleton or once token was overwritten, and
+no unit-test mode was enabled. Other startup/service dependencies remain unknown.
+
+Strategy decision: retain the attachable copied target for debugging evidence;
+use an owned host to investigate shared-manager discovery without initializing
+NTKClockViewController/ComplicationServicesServer. Next milestone has three
+acceptance checks: explicitly install a host-scoped in-memory discovery bridge;
+consume the custom bundle through the native shared manager/gallery path; remove
+it and verify the original manager class and lookup behavior return. Keep the
+system-only bridge guard intact and expose any owned-host experiment separately.
+This demonstrates in-process integration only. System gallery visibility and
+cross-process persistence remain separate, unpassed gates.

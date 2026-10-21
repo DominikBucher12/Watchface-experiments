@@ -34,3 +34,15 @@ xcrun --sdk watchsimulator clang \
   -o "$bundle_dir/MYLocalFaceBundle"
 codesign --force --sign - "$bundle_dir"
 printf '%s\n' "$bundle_dir"
+
+# Separate opt-in system-host bridge; never loaded or executed by this script.
+xcrun --sdk watchsimulator clang \
+  -target x86_64-apple-watchos26.5-simulator -isysroot "$sdk_path" \
+  -fobjc-arc -fno-modules -Wall -Wextra -Werror -g -dynamiclib \
+  "$experiment_dir/MYClockFaceBridge.m" "$ntk_binary" \
+  -F"$runtime_root/System/Library/PrivateFrameworks" \
+  -framework Foundation -framework ClockKit \
+  -install_name @rpath/MYClockFaceBridge.dylib \
+  -o "$output_dir/MYClockFaceBridge.dylib"
+codesign --force --sign - "$output_dir/MYClockFaceBridge.dylib"
+printf '%s\n' "$output_dir/MYClockFaceBridge.dylib"
