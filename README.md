@@ -6,8 +6,8 @@ Minimal, clean-room **watchOS 26.5** research starter for an **Intel / x86_64** 
 
 - `WatchFaceLab.xcodeproj` — single-target SwiftUI watch-only app built with the public SDK.
 - A black digital clock UI that is intentionally **not** a real system watch face.
-- `Experiments/NTKPrivateInterfaces.h` — minimal *unverified* declarations reconstructed from disassembly.
-- `Experiments/MYCustomFace.m` — a separate, **not compiled/linked by the app**, Objective-C prototype overriding `faceViewClass`.
+- `Experiments/NTKPrivateInterfaces.h` — minimal declarations checked against installed 23T570 x86_64 metadata.
+- `Experiments/MYCustomFace.m` — an isolated Objective-C renderer overriding `faceViewClass`, **not linked by the app**.
 - `Docs/RESEARCH.md` — evidence, assumptions, and gates for the next LLDB exercise.
 
 ## First run — do only this
@@ -39,3 +39,11 @@ This is a **stage-0 runnable baseline plus stage-1 source prototype**, not a wor
 ## Continue with ChatGPT / Codex
 
 Commit the entire directory to your own repository. The source code and `Docs/RESEARCH.md` are the authoritative project context; do not rely exclusively on conversational memory. In a new chat, provide your GitHub repo URL and say to continue from the documented milestone.
+
+## Isolated simulator experiment
+
+`bash Experiments/build-simulator.sh` builds the separate x86_64 watchOS 26.5
+simulator dylib under `/tmp/WatchFaceLab26-NTK`. It uses the installed runtime
+without copying Apple frameworks. See `Docs/RESEARCH.md` for evidence, the explicit
+entry point, UIKit compilation workaround, and remaining runtime gates.
+The module has been built; allocation and visual presentation have not been run.
