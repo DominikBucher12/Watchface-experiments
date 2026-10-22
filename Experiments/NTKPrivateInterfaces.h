@@ -68,7 +68,8 @@
 @end
 
 @interface NTKFaceBundleLoader : NSObject
-+ (instancetype)faceBundleLoaderWithDirectories:(NSSet<NSURL *> *)directories;
++ (instancetype)faceBundleLoaderWithDirectories:(NSSet<NSURL *> *)directories
+                      appBundleIdentifierPrefixes:(NSSet<NSString *> *)prefixes;
 - (NTKFaceBundle *)loadFaceBundleWithIdentifier:(NSString *)identifier;
 @end
 

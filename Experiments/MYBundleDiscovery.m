@@ -22,7 +22,8 @@ BOOL MYDiscoverLocalFaceBundle(NSString *directoryPath) {
     // The installed factory forwards the directory collection to initWithURLs:.
     // NTKFaceBundleManager uses a set of file URLs; use the same collection shape.
     NTKFaceBundleLoader *loader = [NTKFaceBundleLoader faceBundleLoaderWithDirectories:
-                                  [NSSet setWithObject:directoryURL]];
+                                  [NSSet setWithObject:directoryURL]
+    appBundleIdentifierPrefixes:[NSSet setWithObject:@"dev.develodom.WatchFaceLab"]];
     if (!loader) return NO;
     NSLog(@"Local bundle PoC: isolated loader created; looking up %@", identifier);
     NTKFaceBundle *bundle = [loader loadFaceBundleWithIdentifier:identifier];
@@ -63,7 +64,8 @@ MYCustomFace *MYRestoreLocalFaceBundle(NSString *directoryPath) {
     NSString *identifier = @"dev.develodom.WatchFaceLab.LocalFaceBundle";
     NSURL *directoryURL = [NSURL fileURLWithPath:directoryPath isDirectory:YES];
     NTKFaceBundleLoader *loader = [NTKFaceBundleLoader faceBundleLoaderWithDirectories:
-                                  [NSSet setWithObject:directoryURL]];
+                                  [NSSet setWithObject:directoryURL]
+    appBundleIdentifierPrefixes:[NSSet setWithObject:@"dev.develodom.WatchFaceLab"]];
     NTKFaceBundle *bundle = [loader loadFaceBundleWithIdentifier:identifier];
     if (!bundle || [bundle faceClass] != MYCustomFace.class) return nil;
     CLKDevice *device = [CLKDevice currentDevice];
@@ -132,7 +134,8 @@ BOOL MYInspectLocalFaceGallery(NSString *directoryPath) {
     NSString *identifier = @"dev.develodom.WatchFaceLab.LocalFaceBundle";
     NSURL *url = [NSURL fileURLWithPath:directoryPath isDirectory:YES];
     NTKFaceBundleLoader *loader = [NTKFaceBundleLoader faceBundleLoaderWithDirectories:
-                                  [NSSet setWithObject:url]];
+                                  [NSSet setWithObject:url]
+    appBundleIdentifierPrefixes:[NSSet setWithObject:@"dev.develodom.WatchFaceLab"]];
     NTKFaceBundle *bundle = [loader loadFaceBundleWithIdentifier:identifier];
     CLKDevice *device = [CLKDevice currentDevice];
     if (!bundle || !device || [bundle faceClass] != MYCustomFace.class) return NO;
@@ -184,7 +187,8 @@ BOOL MYStartNativeGalleryCollection(NSString *directoryPath) {
     if (!MYInspectLocalFaceGallery(directoryPath)) return NO;
     NSURL *url = [NSURL fileURLWithPath:directoryPath isDirectory:YES];
     NTKFaceBundleLoader *loader = [NTKFaceBundleLoader faceBundleLoaderWithDirectories:
-                                  [NSSet setWithObject:url]];
+                                  [NSSet setWithObject:url]
+    appBundleIdentifierPrefixes:[NSSet setWithObject:@"dev.develodom.WatchFaceLab"]];
     NTKFaceBundle *bundle = [loader loadFaceBundleWithIdentifier:
                             @"dev.develodom.WatchFaceLab.LocalFaceBundle"];
     CLKDevice *device = [CLKDevice currentDevice];

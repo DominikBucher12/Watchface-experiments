@@ -124,7 +124,8 @@ BOOL MYClockFaceBridgeInstall(NSString *directoryPath) {
     NSBundle *diskBundle = [NSBundle bundleWithURL:bundleURL];
     if (![diskBundle.bundleIdentifier isEqualToString:MYIdentifier]) return NO;
     NTKFaceBundleLoader *loader = [NTKFaceBundleLoader faceBundleLoaderWithDirectories:
-                                  [NSSet setWithObject:url]];
+                                  [NSSet setWithObject:url]
+    appBundleIdentifierPrefixes:[NSSet setWithObject:@"dev.develodom.WatchFaceLab"]];
     NTKFaceBundle *bundle = [loader loadFaceBundleWithIdentifier:MYIdentifier];
     if (!bundle || ![NSStringFromClass(bundle.class) isEqualToString:@"MYLocalFaceBundle"] ||
         ![[bundle.class identifier] isEqualToString:MYIdentifier] ||
