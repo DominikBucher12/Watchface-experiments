@@ -12,6 +12,7 @@
 		010000000000000000000032 /* Resources/pip-boy-reference.gif in Resources */ = {isa = PBXBuildFile; fileRef = 010000000000000000000026 /* Resources/pip-boy-reference.gif */; };
 		4E24FD483089933D00446D36 /* MYCustomFaceExperiment.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 4E24FD473089933D00446D36 /* MYCustomFaceExperiment.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		4E24FD4A308998BC00446D36 /* CustomFaceLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E24FD49308998B600446D36 /* CustomFaceLoader.swift */; };
+		4E7CD08F308AA3C400DFEB93 /* MYLocalFaceBundle.bundle in CopyFiles */ = {isa = PBXBuildFile; fileRef = 4E7CD08E308AA3C400DFEB93 /* MYLocalFaceBundle.bundle */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
@@ -24,6 +25,16 @@
 				4E24FD483089933D00446D36 /* MYCustomFaceExperiment.framework in Embed Frameworks */,
 			);
 			name = "Embed Frameworks";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		4E7CD08D308AA34300DFEB93 /* CopyFiles */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 7;
+			files = (
+				4E7CD08F308AA3C400DFEB93 /* MYLocalFaceBundle.bundle in CopyFiles */,
+			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXCopyFilesBuildPhase section */
@@ -39,6 +50,7 @@
 		010000000000000000000026 /* Resources/pip-boy-reference.gif */ = {isa = PBXFileReference; lastKnownFileType = image.gif; path = "Resources/pip-boy-reference.gif"; sourceTree = "<group>"; };
 		4E24FD473089933D00446D36 /* MYCustomFaceExperiment.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MYCustomFaceExperiment.framework; path = Experiments/Build/Device/MYCustomFaceExperiment.framework; sourceTree = "<group>"; };
 		4E24FD49308998B600446D36 /* CustomFaceLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomFaceLoader.swift; sourceTree = "<group>"; };
+		4E7CD08E308AA3C400DFEB93 /* MYLocalFaceBundle.bundle */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.plug-in"; name = MYLocalFaceBundle.bundle; path = Experiments/Build/Device/FaceBundles/MYLocalFaceBundle.bundle; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -55,6 +67,7 @@
 		010000000000000000000003 = {
 			isa = PBXGroup;
 			children = (
+				4E7CD08E308AA3C400DFEB93 /* MYLocalFaceBundle.bundle */,
 				4E24FD473089933D00446D36 /* MYCustomFaceExperiment.framework */,
 				010000000000000000000006 /* WatchFaceLab */,
 				010000000000000000000007 /* Experiments */,
@@ -110,6 +123,8 @@
 				010000000000000000000013 /* Resources */,
 				4E24FD44308992B900446D36 /* Frameworks */,
 				4E24FD45308992B900446D36 /* Embed Frameworks */,
+				4E7CD090308AA3E700DFEB93 /* Run build-local-face-bundle */,
+				4E7CD08D308AA34300DFEB93 /* CopyFiles */,
 			);
 			buildRules = (
 			);
@@ -162,6 +177,27 @@
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXResourcesBuildPhase section */
+
+/* Begin PBXShellScriptBuildPhase section */
+		4E7CD090308AA3E700DFEB93 /* Run build-local-face-bundle */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Run build-local-face-bundle";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# Type a script or drag a script file from your workspace to insert its path.\nbash \"$SRCROOT/Experiments/build-local-face-bundle.sh\"\n";
+		};
+/* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
 		010000000000000000000012 /* Sources */ = {
