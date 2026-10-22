@@ -46,50 +46,6 @@ enum CustomFaceLoader {
             .appendingPathComponent("MYLocalFaceBundle.bundle", isDirectory: true)
 
         let result = discover(directory.deletingLastPathComponent().path as NSString)
-
-        print("Argon PoC: discovery \(result != 0 ? "PASS✅" : "FAIL❌")")
-        
-        if let symbol = dlsym(handle, "MYTestOwnedManagerWatch27") {
-            let test = unsafeBitCast(
-                symbol,
-                to: (@convention(c) () -> Void).self
-            )
-            test()
-        } else {
-            print("OWNED27 FAIL: export not found")
-        }
-        
-//        if let symbol = dlsym(handle, "MYInspectArgonRuntime") {
-//            let inspect = unsafeBitCast(
-//                symbol,
-//                to: (@convention(c) () -> Void).self
-//            )
-//            inspect()
-//        } else {
-//            print("❌ ARGON_PROBE FAIL: export not found")
-//        }
-//        
-//        if let symbol = dlsym(handle, "MYInspectArgonABI") {
-//            let inspectABI = unsafeBitCast(
-//                symbol,
-//                to: (@convention(c) () -> Void).self
-//            )
-//            inspectABI()
-//        } else {
-//            print("ARGON_ABI FAIL: export not found")
-//        }
-
-        // 😭😭😭😭😭😭😭😭😭😭
-        // NSFilePath=/var/mobile/Library/NanoTimeKit/FaceSupport/ExtractedBundles/24R365, NSUnderlyingError=0x12083ccc0 {Error Domain=NSPOSIXErrorDomain Code=1 "Operation not permitted"}} 😭
-//        if let symbol = dlsym(handle, "MYInspectArgonDescriptors") {
-//            let inspect = unsafeBitCast(
-//                symbol,
-//                to: (@convention(c) () -> Void).self
-//            )
-//            inspect()
-//        } else {
-//            print("ARGON_DESCRIPTOR FAIL: export not found")
-//        }
     }
     
     static func present() {
@@ -108,6 +64,13 @@ enum CustomFaceLoader {
         guard let handle = dlopen(frameworkURL.path, RTLD_NOW) else {
             print("CustomFace: dlopen failed: \(String(cString: dlerror()))")
             return
+        }
+
+        if let v3Symbol = dlsym(handle, "MYInspectArgonDescriptorsV3") {
+            let v3Probe = unsafeBitCast(v3Symbol, to: (@convention(c) () -> Void).self)
+            v3Probe()
+        } else {
+            print("ARGON_V3 FAIL export missing")
         }
 
         guard let symbol = dlsym(handle, "MYPresentCustomFaceExperiment") else {

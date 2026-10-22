@@ -2,25 +2,34 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
-    <key>CFBundleIdentifier</key>
-    <string>dev.develodom.WatchFaceLab.LocalFaceBundle</string>
-    <key>CFBundleName</key>
-    <string>MYLocalFaceBundle</string>
-    <key>CFBundleExecutable</key>
-    <string>MYLocalFaceBundle</string>
-    <key>CFBundlePackageType</key>
-    <string>BNDL</string>
-    <key>CFBundleInfoDictionaryVersion</key>
-    <string>6.0</string>
-    <key>CFBundleVersion</key>
-    <string>1</string>
-    <key>CFBundleShortVersionString</key>
-    <string>1.0</string>
-    <key>CFBundleSupportedPlatforms</key>
-    <array><string>WatchSimulator</string></array>
-    <key>MinimumOSVersion</key>
-    <string>26.5</string>
-    <key>NSPrincipalClass</key>
-    <string>MYLocalFaceBundle</string>
+	<key>CFBundleIdentifier</key>
+	<string>dev.develodom.WatchFaceLab.LocalFaceBundle</string>
+	<key>CFBundleName</key>
+	<string>MYLocalFaceBundle</string>
+	<key>CFBundleExecutable</key>
+	<string>MYLocalFaceBundle</string>
+	<key>CFBundlePackageType</key>
+	<string>BNDL</string>
+	<key>CFBundleInfoDictionaryVersion</key>
+	<string>6.0</string>
+	<key>CFBundleVersion</key>
+	<string>1</string>
+	<key>CFBundleShortVersionString</key>
+	<string>1.0</string>
+	<key>CFBundleSupportedPlatforms</key>
+	<array>
+		<string>WatchSimulator</string>
+	</array>
+	<key>MinimumOSVersion</key>
+	<string>26.5</string>
+	<key>NSPrincipalClass</key>
+	<string>MYLocalFaceBundle</string>
+	<key>Argon</key>
+	<dict>
+		<key>FileName</key>
+		<string>WatchFaceLab-Test.aea</string>
+		<key>Key</key>
+		<string>WatchFaceLab-Test-NotARealKey</string>
+	</dict>
 </dict>
 </plist>
