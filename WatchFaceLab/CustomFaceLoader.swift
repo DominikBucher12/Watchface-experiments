@@ -49,35 +49,47 @@ enum CustomFaceLoader {
 
         print("Argon PoC: discovery \(result != 0 ? "PASS✅" : "FAIL❌")")
         
-        if let symbol = dlsym(handle, "MYInspectArgonRuntime") {
-            let inspect = unsafeBitCast(
+        if let symbol = dlsym(handle, "MYTestOwnedManagerWatch27") {
+            let test = unsafeBitCast(
                 symbol,
                 to: (@convention(c) () -> Void).self
             )
-            inspect()
+            test()
         } else {
-            print("❌ ARGON_PROBE FAIL: export not found")
+            print("OWNED27 FAIL: export not found")
         }
         
-        if let symbol = dlsym(handle, "MYInspectArgonABI") {
-            let inspectABI = unsafeBitCast(
-                symbol,
-                to: (@convention(c) () -> Void).self
-            )
-            inspectABI()
-        } else {
-            print("ARGON_ABI FAIL: export not found")
-        }
+//        if let symbol = dlsym(handle, "MYInspectArgonRuntime") {
+//            let inspect = unsafeBitCast(
+//                symbol,
+//                to: (@convention(c) () -> Void).self
+//            )
+//            inspect()
+//        } else {
+//            print("❌ ARGON_PROBE FAIL: export not found")
+//        }
+//        
+//        if let symbol = dlsym(handle, "MYInspectArgonABI") {
+//            let inspectABI = unsafeBitCast(
+//                symbol,
+//                to: (@convention(c) () -> Void).self
+//            )
+//            inspectABI()
+//        } else {
+//            print("ARGON_ABI FAIL: export not found")
+//        }
 
-        if let symbol = dlsym(handle, "MYInspectArgonDescriptors") {
-            let inspect = unsafeBitCast(
-                symbol,
-                to: (@convention(c) () -> Void).self
-            )
-            inspect()
-        } else {
-            print("ARGON_DESCRIPTOR FAIL: export not found")
-        }
+        // 😭😭😭😭😭😭😭😭😭😭
+        // NSFilePath=/var/mobile/Library/NanoTimeKit/FaceSupport/ExtractedBundles/24R365, NSUnderlyingError=0x12083ccc0 {Error Domain=NSPOSIXErrorDomain Code=1 "Operation not permitted"}} 😭
+//        if let symbol = dlsym(handle, "MYInspectArgonDescriptors") {
+//            let inspect = unsafeBitCast(
+//                symbol,
+//                to: (@convention(c) () -> Void).self
+//            )
+//            inspect()
+//        } else {
+//            print("ARGON_DESCRIPTOR FAIL: export not found")
+//        }
     }
     
     static func present() {

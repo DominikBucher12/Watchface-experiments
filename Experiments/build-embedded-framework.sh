@@ -33,7 +33,7 @@ PLIST
 xcrun --sdk watchos clang \
   -target arm64-apple-watchos27.0 -isysroot "$sdk" \
   -fobjc-arc -fno-modules -Wall -Wextra -Werror -g -dynamiclib \
-  "$experiments/MYCustomFace.m" "$experiments/MYBundleDiscovery.m" "$experiments/MYArgonRuntimeProbe.m" "$experiments/MYArgonABIProbe.m" "$experiments/MYArgonDescriptorProbe.m" \
+  "$experiments/MYCustomFace.m" "$experiments/MYBundleDiscovery.m" "$experiments/MYOwnedManagerWatch27.m" "$experiments/MYArgonRuntimeProbe.m" "$experiments/MYArgonABIProbe.m" "$experiments/MYArgonDescriptorProbe.m" \
   "$ntk" "$clockkit" \
   -framework Foundation -framework UIKit -framework ClockKit \
   -framework CoreGraphics -framework ImageIO -framework QuartzCore \

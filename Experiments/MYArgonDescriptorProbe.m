@@ -2,53 +2,43 @@
 #import <objc/runtime.h>
 #import <objc/message.h>
 
-// Explicitly enumerates descriptors from the app process's NTKFaceBundleManager.
-// Never prints keys, file names, JSON, URLs, or descriptor descriptions.
-// No calls to loadKeyDescriptor:, argonUpdated:, or extraction APIs.
+// For watchOS 27.0.1 (24R365) only. Diagnostic; does not register anything.
+// Verified from device NanoTimeKit disassembly at 0x12a6a4-0x12a6b0:
+// enumeration invokes block with NSUInteger group/style and id descriptor.
 __attribute__((visibility("default"))) void MYInspectArgonDescriptors(void) {
-    NSLog(@"ARGON_DESCRIPTOR BEGIN");
-    Class managerClass = objc_lookUpClass("NTKFaceBundleManager");
-    SEL sharedSel = sel_registerName("sharedManager");
-    SEL enumerateSel = sel_registerName("enumerateArgonKeyDescriptorsWithBlock:");
-    if (!managerClass || !class_respondsToSelector(object_getClass(managerClass), sharedSel) ||
-        !class_getInstanceMethod(managerClass, enumerateSel)) {
-        NSLog(@"ARGON_DESCRIPTOR unavailable manager or selectors");
-        NSLog(@"ARGON_DESCRIPTOR END");
-        return;
-    }
-    // Verified on watchOS 27.0.1: +sharedManager @16@0:8,
-    // -enumerateArgonKeyDescriptorsWithBlock: v24@0:8@?16.
-    Method enumerateMethod = class_getInstanceMethod(managerClass, enumerateSel);
-    const char *actualEncoding = method_getTypeEncoding(enumerateMethod);
-    if (!actualEncoding || strcmp(actualEncoding, "v24@0:8@?16") != 0) {
-        NSLog(@"ARGON_DESCRIPTOR unsupported enumeration ABI, refusing invocation");
-        NSLog(@"ARGON_DESCRIPTOR END");
+    NSLog(@"ARGON_DESCRIPTOR_V2 BEGIN");
+    Class cls = objc_lookUpClass("NTKFaceBundleManager");
+    SEL shared = @selector(sharedManager);
+    SEL enumerate = sel_registerName("enumerateArgonKeyDescriptorsWithBlock:");
+    Method m = cls ? class_getInstanceMethod(cls, enumerate) : NULL;
+    if (!cls || !class_respondsToSelector(object_getClass(cls), shared) ||
+        !m || strcmp(method_getTypeEncoding(m), "v24@0:8@?16") != 0) {
+        NSLog(@"ARGON_DESCRIPTOR_V2 SKIP selector or ABI mismatch");
+        NSLog(@"ARGON_DESCRIPTOR_V2 END");
         return;
     }
     @try {
-        id (*getManager)(id, SEL) = (id (*)(id, SEL))objc_msgSend;
-        id manager = getManager((id)managerClass, sharedSel);
-        if (!manager || ![manager isKindOfClass:managerClass]) {
-            NSLog(@"ARGON_DESCRIPTOR sharedManager unavailable");
-            NSLog(@"ARGON_DESCRIPTOR END");
+        id manager = ((id (*)(id, SEL))objc_msgSend)((id)cls, shared);
+        if (!manager || ![manager isKindOfClass:cls]) {
+            NSLog(@"ARGON_DESCRIPTOR_V2 SKIP no shared manager");
+            NSLog(@"ARGON_DESCRIPTOR_V2 END");
             return;
         }
         __block NSUInteger count = 0;
         __block NSMutableDictionary<NSString *, NSNumber *> *types = [NSMutableDictionary dictionary];
-        // Only use the first block argument. Any additional callback args are ignored.
-        void (^visitor)(id) = ^(id descriptor) {
+        void (^visitor)(NSUInteger, id) = ^(NSUInteger group, id descriptor) {
+            (void)group; // do not print internal keys or identifiers
             count++;
-            NSString *type = descriptor ? NSStringFromClass([descriptor class]) : @"nil";
-            types[type] = @([types[type] unsignedIntegerValue] + 1);
+            NSString *name = descriptor ? NSStringFromClass([descriptor class]) : @"nil";
+            types[name] = @([types[name] unsignedIntegerValue] + 1);
         };
-        void (*enumerate)(id, SEL, id) = (void (*)(id, SEL, id))objc_msgSend;
-        enumerate(manager, enumerateSel, visitor);
-        NSLog(@"ARGON_DESCRIPTOR completed count=%lu", (unsigned long)count);
-        for (NSString *type in [[types allKeys] sortedArrayUsingSelector:@selector(compare:)]) {
-            NSLog(@"ARGON_DESCRIPTOR descriptorClass=%@ count=%@", type, types[type]);
+        ((void (*)(id, SEL, id))objc_msgSend)(manager, enumerate, visitor);
+        NSLog(@"ARGON_DESCRIPTOR_V2 completed count=%lu", (unsigned long)count);
+        for (NSString *name in [[types allKeys] sortedArrayUsingSelector:@selector(compare:)]) {
+            NSLog(@"ARGON_DESCRIPTOR_V2 class=%@ count=%@", name, types[name]);
         }
-    } @catch (NSException *exception) {
-        NSLog(@"ARGON_DESCRIPTOR exception name=%@ (details withheld)", exception.name);
+    } @catch (NSException *e) {
+        NSLog(@"ARGON_DESCRIPTOR_V2 exception=%@", e.name);
     }
-    NSLog(@"ARGON_DESCRIPTOR END");
+    NSLog(@"ARGON_DESCRIPTOR_V2 END");
 }
