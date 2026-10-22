@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Prepare a separately identified, debug-signed ClockFace copy. Never installs/runs it."""
+"""SIMULATOR ONLY: prepare a debug-signed ClockFace copy. Not for physical watchOS devices."""
 import argparse
 import hashlib
 import json
@@ -18,9 +18,12 @@ def digest(path):
 
 def main():
     parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('--device', action='store_true', help='Reject unsupported physical-device use explicitly')
     parser.add_argument('--runtime-root', type=Path, default=RUNTIME)
     parser.add_argument('--output', type=Path, default=Path('/tmp/WatchFaceLab26-DebugTarget'))
     args = parser.parse_args()
+    if args.device:
+        parser.error("No device conversion: copying/resigning the system ClockFace app cannot reproduce Apple entitlements or system hosting.")
     source = (args.runtime_root / 'Applications/ClockFace.app').resolve(strict=True)
     output = args.output.resolve()
     if output.exists():

@@ -6,8 +6,16 @@
 #import <TargetConditionals.h>
 #import <string.h>
 
-#if !TARGET_OS_SIMULATOR || !defined(__x86_64__)
-#error This bridge is restricted to the inspected x86_64 watch simulator.
+#if !TARGET_OS_WATCH || TARGET_OS_SIMULATOR || !defined(__arm64__)
+#error This bridge targets arm64 physical watchOS devices only.
+#endif
+
+// IMPORTANT: This hook was reverse engineered on watchOS 26.5 simulator.
+// Refuse all hooking on watchOS 27 until the exact image UUID AND method
+// encodings have been independently verified on the target device.
+// Supply -DMY_VERIFIED_NTK_UUID=\"UUID\" only after validation.
+#ifndef MY_VERIFIED_NTK_UUID
+#define MY_VERIFIED_NTK_UUID "UNVERIFIED-WATCHOS27"
 #endif
 
 #ifndef MY_BRIDGE_HOST_IDENTIFIER
@@ -29,19 +37,20 @@ static MYEnumerateIMP MYOriginalEnumerate;
 static MYLookupIMP MYOriginalLookup;
 
 static BOOL MYExpectedImage(void) {
+    if (strcmp(MY_VERIFIED_NTK_UUID, "UNVERIFIED-WATCHOS27") == 0) return NO;
     const char *path = class_getImageName(NTKFaceBundleManager.class);
     if (!path) return NO;
     for (uint32_t i = 0; i < _dyld_image_count(); i++) {
         if (strcmp(path, _dyld_get_image_name(i)) != 0) continue;
         const struct mach_header_64 *header = (const void *)_dyld_get_image_header(i);
-        if (header->magic != MH_MAGIC_64 || header->cputype != CPU_TYPE_X86_64) return NO;
+        if (header->magic != MH_MAGIC_64 || header->cputype != CPU_TYPE_ARM64) return NO;
         const struct load_command *command = (const void *)(header + 1);
         for (uint32_t j = 0; j < header->ncmds; j++) {
             if (command->cmdsize < sizeof(*command)) return NO;
             if (command->cmd == LC_UUID) {
                 if (command->cmdsize < sizeof(struct uuid_command)) return NO;
                 NSUUID *uuid = [[NSUUID alloc] initWithUUIDBytes:((const struct uuid_command *)command)->uuid];
-                return [uuid.UUIDString isEqualToString:@"BA6B817D-D837-37DA-9BD1-DB2D1FC9CAD3"];
+                return [uuid.UUIDString isEqualToString:[NSString stringWithUTF8String:MY_VERIFIED_NTK_UUID]];
             }
             command = (const void *)((const char *)command + command->cmdsize);
         }

@@ -1,4 +1,4 @@
-// Compiled only by the standalone simulator experiment build script.
+// Experimental renderer for a watchOS device build; private API compatibility unverified on 27.0.1.
 #import "MYCustomFace.h"
 #import <ImageIO/ImageIO.h>
 #import <QuartzCore/QuartzCore.h>
@@ -26,8 +26,12 @@ static UIView *MYPipRule(void) {
 }
 
 static UIImage *MYAnimatedVaultBoySprite(void) {
-    NSString *path = @"/tmp/WatchFaceLab26-NTK/pip-boy-reference.gif";
-    NSURL *url = [NSURL fileURLWithPath:path];
+    NSURL *url = [[NSBundle mainBundle] URLForResource:@"pip-boy-reference" withExtension:@"gif"];
+    NSString *path = url.path ?: @"<pip-boy-reference.gif missing from app bundle>";
+    if (!url) {
+        NSLog(@"Pip-Boy preview: add pip-boy-reference.gif to the watch app Copy Bundle Resources");
+        return nil;
+    }
     CGImageSourceRef source = CGImageSourceCreateWithURL((__bridge CFURLRef)url, NULL);
     if (!source) {
         NSLog(@"Pip-Boy preview: couldn't open animation at %@", path);

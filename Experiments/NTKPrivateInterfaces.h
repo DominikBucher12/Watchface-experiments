@@ -1,4 +1,5 @@
-// Minimal declarations verified against watchOS 26.5 (23T570), x86_64 metadata.
+// Experimental declarations derived from watchOS 26.5 simulator x86_64 metadata.
+// NOT yet ABI-verified on watchOS 27.0.1 device (arm64/arm64e).
 #import <Foundation/Foundation.h>
 // UIKit exists in the runtime but its SDK declarations exclude watchOS.
 // Suppress only unavailable annotations while parsing UIKit for this experiment.
