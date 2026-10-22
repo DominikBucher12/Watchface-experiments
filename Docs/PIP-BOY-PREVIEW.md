@@ -17,10 +17,10 @@ the native `NTKFaceViewController` experiment. Whether watchOS honors the
 status-bar preference for this temporary window still needs visual runtime
 verification.
 
-The source animation is kept outside the project at:
+The source animation is included in the project and copied into the watch app bundle:
 
 ```text
-/tmp/WatchFaceLab26-NTK/pip-boy-reference.gif
+WatchFaceLab/Resources/pip-boy-reference.gif
 ```
 
 Build the experiment module with:

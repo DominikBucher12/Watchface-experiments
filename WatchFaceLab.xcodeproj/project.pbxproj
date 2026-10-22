@@ -7,6 +7,7 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		010000000000000000000032 /* pip-boy-reference.gif in Resources */ = {isa = PBXBuildFile; fileRef = 010000000000000000000026 /* pip-boy-reference.gif */; };
 		010000000000000000000030 /* WatchFaceLabApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 010000000000000000000020 /* WatchFaceLabApp.swift */; };
 		010000000000000000000031 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 010000000000000000000021 /* ContentView.swift */; };
 		4E24FD483089933D00446D36 /* MYCustomFaceExperiment.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 4E24FD473089933D00446D36 /* MYCustomFaceExperiment.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
@@ -27,6 +28,7 @@
 /* End PBXCopyFilesBuildPhase section */
 
 /* Begin PBXFileReference section */
+		010000000000000000000026 /* pip-boy-reference.gif */ = {isa = PBXFileReference; lastKnownFileType = image.gif; path = Resources/pip-boy-reference.gif; sourceTree = "<group>"; };
 		010000000000000000000005 /* WatchFaceLab.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = WatchFaceLab.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		010000000000000000000020 /* WatchFaceLabApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = WatchFaceLabApp.swift; sourceTree = "<group>"; };
 		010000000000000000000021 /* ContentView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentView.swift; sourceTree = "<group>"; };
@@ -72,6 +74,7 @@
 			children = (
 				010000000000000000000020 /* WatchFaceLabApp.swift */,
 				010000000000000000000021 /* ContentView.swift */,
+				010000000000000000000026 /* pip-boy-reference.gif */,
 			);
 			path = WatchFaceLab;
 			sourceTree = "<group>";
@@ -151,6 +154,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				010000000000000000000032 /* pip-boy-reference.gif in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

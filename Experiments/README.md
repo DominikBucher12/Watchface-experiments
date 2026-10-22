@@ -5,14 +5,18 @@ This folder is an **architecture migration**, not a proven on-device system face
 ## What changed
 - `build-watchos-device.sh`: arm64 WATCHOS target; validates device NanoTimeKit / ClockKitUI using `vtool -arch arm64e`; links ImageIO and QuartzCore; produces four artifacts **unsigned**. It does not bundle or install any of them.
 - `MYClockFaceBridge.m`: builds for arm64 physical watchOS only; stale x86_64 guard and CPU check removed. **FAILS CLOSED** by default on watchOS 27: old 26.5 simulator UUID is not trusted, and method encodings have not been verified for this device ABI. The separate owned bridge inherits this guard.
-- `MYCustomFace.m`: GIF is resolved from `NSBundle mainBundle` (add `pip-boy-reference.gif` to watch app resources); no Mac `/tmp` assumption.
+- `MYCustomFace.m`: GIF is resolved from `NSBundle mainBundle`. `WatchFaceLab/Resources/pip-boy-reference.gif` is included in the watch app Copy Bundle Resources; no Mac `/tmp` assumption.
 - `NTKPrivateInterfaces.h`: explicitly documents watchOS 27 ABI as unverified.
 - `symbols_test.sh`: deterministic watchOS 27.0.1 DeviceSupport path and `arm64e` inspection.
 - `prepare-debug-target.py`: preserved for **simulator-only** research, with `--device` explicitly rejected. It does not prepare a physical-device system host.
 - Other `.m` / `.h` files: checked; they contain no x86 assembly or x86-only compiler targets. Existing runtime API contracts remain unverified on 27.
 
-## Missing input
-`LocalFaceBundle/Info.plist` and `LocalFaceBundle/MYLocalFaceBundle.m` were NOT supplied. The build script expects them and cannot complete all four outputs without them. `pip-boy-reference.gif` was also not included.
+## Animation asset
+The original 512×640 Tenor animation is checked in at
+`WatchFaceLab/Resources/pip-boy-reference.gif` and copied into the app bundle by Xcode.
+Source: https://media1.tenor.com/m/zojzGy0Y9gQAAAAd/pip-boy-applewatch.gif
+
+The `LocalFaceBundle` sources are included in this checkout.
 
 ## Build on Mac with Xcode watchOS 27 SDK
 
@@ -24,7 +28,7 @@ bash Experiments/symbols_test.sh
 bash Experiments/build-watchos-device.sh
 ```
 
-Execute from the directory *above* `Experiments`. This requires the unsupplied `LocalFaceBundle` files to build all outputs.
+Execute from the directory *above* `Experiments`. The `LocalFaceBundle` files are included.
 
 ## Device integration caution
 - watchOS device and simulator binaries are distinct platforms.
