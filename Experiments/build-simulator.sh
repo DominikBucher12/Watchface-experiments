@@ -15,6 +15,7 @@ xcrun --sdk watchsimulator clang \
   "$runtime_root/System/Library/PrivateFrameworks/ClockKitUI.framework/ClockKitUI" \
   -F"$runtime_root/System/Library/PrivateFrameworks" \
   -framework Foundation -framework UIKit -framework ClockKit -framework CoreGraphics \
+  -framework ImageIO -framework QuartzCore \
   -install_name @rpath/MYCustomFaceExperiment.dylib \
   -o "$output_dir/MYCustomFaceExperiment.dylib"
 codesign --force --sign - "$output_dir/MYCustomFaceExperiment.dylib"

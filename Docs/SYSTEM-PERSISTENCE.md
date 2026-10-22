@@ -76,6 +76,21 @@ client allowlist key. A `codesign -d --entitlements` inspection of this simulato
 daemon emitted an invalid-entitlements-blob warning, so it did not establish the
 daemon's effective entitlements or the service's client policy.
 
+The installed daemon was rechecked directly from its Objective-C metadata and
+x86_64 disassembly. `NTKDCollectionCoordinator` implements
+`listener:shouldAcceptNewConnection:` with encoding `B32@0:8@16@24` at IMP
+0x10000fd84. The method retains the incoming connection, queues its setup on the
+coordinator queue, and returns `YES`; the method body does not extract an audit
+token, signing identifier, or entitlement before accepting. The registration
+selector on `NTKDCollectionClient` is `registerForCollectionIdentifier:deviceUUID:withSeqId:`
+with encoding `v40@0:8@16@24@32` at IMP 0x1000249c8; its front half retains the
+arguments and dispatches registration work asynchronously. This narrows the
+answer to “no explicit check in the inspected accept method,” not “any app is
+authorized”: launchd/Mach-service policy, NSXPC interface checks, asynchronous
+registration/store validation, and operation-specific policy remain unverified.
+Do not test those boundaries by opening a client connection or issuing a
+collection request; that would move from static inspection into service use.
+
 The `NTKDCollectionClient` exposes registration and separate queued mutation
 methods for add, remove, reorder, configuration/resource updates, and selection.
 The curator's `collectionStore:didAddFace:forUUID:seqId:` callback forwards the

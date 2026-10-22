@@ -1105,3 +1105,62 @@ clients, or acceptance criteria. No XPC mutation was sent. A normal ClockFace
 registration/load observation on the disposable simulator and daemon-side static
 analysis remain the next read-only checks. Cross-process custom restoration is
 not established.
+
+### Extracted-bundle cache deployment review — 2026-10-22
+
+Considered whether NanoTimeKit's observed
+`Library/NanoTimeKit/FaceSupport/ExtractedBundles/<build>` path could serve as a
+non-debugger way to make the local bundle visible to the simulator. This is an
+internal Argon/extraction cache surfaced by loader logs, not a documented
+third-party install location or registration API. No files were copied there.
+
+The existing `MYLocalFaceBundle` executable has a required
+`@rpath/MYCustomFaceExperiment.dylib` dependency, plus a private NanoTimeKit
+dependency; its embedded runpath is `@loader_path/../..`. The dylib and bundle
+are ad-hoc signed with no Team ID. Copying the bundle alone is therefore
+insufficient. Supplying the missing dylib in a location where ClockFace or
+nanotimekitd would load it would intentionally cause our code to execute inside
+those system processes through an undocumented loader path. That is effectively
+a system-host injection route and would evade the hardened attach boundary, so
+it was not attempted. The Simulator runtime, device data, running processes,
+and face library were not modified. See `otool -L` and `otool -l` output for the
+artifact dependency evidence collected during this review.
+
+### Native gallery UI suitability audit — 2026-10-22
+
+Inspected the installed watchOS 26.5 x86_64 NanoTimeKit implementation before
+considering an app-local UI experiment. `NTKFaceGalleryFactory
+initWithCollectionView:galleryContent:forDevice:` sets itself as the collection
+view delegate/data source, retains the gallery content and device, and attaches
+itself as observer/delegate to the content's face collection. Its collection
+observer callbacks update the collection view as faces are added or removed.
+
+The detail cell wires its Add button to `_addButtonTapped`; that method asks the
+factory to handle the request. The factory resolves the face and invokes its
+delegate's `faceGalleryFactory:wantsFaceAdded:withContainerFrame:` callback.
+The factory's collection `didAddFace` callback then inserts a corresponding face
+item into the UI. The stock `NTKFaceGalleryCollectionViewController` flow uses
+root gallery content with an addable collection. These verified paths make the
+native gallery UI an interactive library workflow, not a passive view over an
+arbitrary local collection. An app-local test could potentially substitute a
+custom delegate, but that would be another private, unverified contract and is
+unnecessary for the already-verified face renderer.
+
+No gallery factory/controller was instantiated and no add callback was invoked.
+The bounded result is to avoid using this UI to advance discovery. A custom
+app-owned SwiftUI/UIKit gallery can display the known local preview safely, but
+would not establish system gallery visibility. The next system-visible gate
+remains blocked by the hardened ClockFace attach policy; only an
+Apple-authorized debug route or a public custom-face extension point changes
+that boundary. Persistent collection mutations remain out of scope.
+
+As a separate read-only check, re-read the installed nanotimekitd Objective-C
+metadata and x86_64 disassembly for collection-server authorization. The
+`NTKDCollectionCoordinator` accept method at IMP 0x10000fd84 queues connection
+setup and returns `YES` without extracting an audit token, signing identifier or
+entitlement in that method. `NTKDCollectionClient`'s registration entry at
+0x1000249c8 retains its arguments and dispatches registration asynchronously.
+This only establishes that those two inspected method bodies contain no direct
+sender check; launchd/Mach service policy, XPC validation, downstream registration
+and per-operation authorization remain unresolved. No service connection or
+collection request was made. Details are recorded in SYSTEM-PERSISTENCE.md.

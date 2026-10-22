@@ -1,9 +1,94 @@
 // Compiled only by the standalone simulator experiment build script.
 #import "MYCustomFace.h"
+#import <ImageIO/ImageIO.h>
+#import <QuartzCore/QuartzCore.h>
+
+static UIColor *MYPipGreen(void) {
+    return [UIColor colorWithRed:0.32 green:1.0 blue:0.14 alpha:1.0];
+}
+
+static UILabel *MYPipLabel(NSString *text, CGFloat size, NSTextAlignment alignment) {
+    UILabel *label = [[UILabel alloc] initWithFrame:CGRectZero];
+    label.text = text;
+    label.textColor = MYPipGreen();
+    label.textAlignment = alignment;
+    label.font = [UIFont monospacedSystemFontOfSize:size weight:UIFontWeightMedium];
+    label.adjustsFontSizeToFitWidth = YES;
+    label.minimumScaleFactor = 0.7;
+    label.numberOfLines = 2;
+    return label;
+}
+
+static UIView *MYPipRule(void) {
+    UIView *rule = [[UIView alloc] initWithFrame:CGRectZero];
+    rule.backgroundColor = [MYPipGreen() colorWithAlphaComponent:0.72];
+    return rule;
+}
+
+static UIImage *MYAnimatedVaultBoySprite(void) {
+    NSString *path = @"/tmp/WatchFaceLab26-NTK/pip-boy-reference.gif";
+    NSURL *url = [NSURL fileURLWithPath:path];
+    CGImageSourceRef source = CGImageSourceCreateWithURL((__bridge CFURLRef)url, NULL);
+    if (!source) {
+        NSLog(@"Pip-Boy preview: couldn't open animation at %@", path);
+        return nil;
+    }
+
+    size_t count = CGImageSourceGetCount(source);
+    NSMutableArray<UIImage *> *frames = [NSMutableArray arrayWithCapacity:count];
+    NSTimeInterval duration = 0.0;
+    for (size_t index = 0; index < count; index++) {
+        CGImageRef fullFrame = CGImageSourceCreateImageAtIndex(source, index, NULL);
+        if (!fullFrame) continue;
+
+        // The GIF is 512x640. This center crop keeps the animated figure and
+        // excludes the HP panel at the bottom; the watch UI is drawn separately.
+        size_t width = CGImageGetWidth(fullFrame);
+        size_t height = CGImageGetHeight(fullFrame);
+        CGRect cropRect = CGRectMake(width * 0.33, height * 0.18,
+                                     width * 0.36, height * 0.52);
+        CGImageRef sprite = CGImageCreateWithImageInRect(fullFrame, cropRect);
+        CGImageRelease(fullFrame);
+        if (!sprite) continue;
+        [frames addObject:[UIImage imageWithCGImage:sprite
+                                               scale:1.0
+                                         orientation:UIImageOrientationUp]];
+        CGImageRelease(sprite);
+
+        NSDictionary *properties = (__bridge_transfer NSDictionary *)
+            CGImageSourceCopyPropertiesAtIndex(source, index, NULL);
+        NSDictionary *gifProperties = properties[(NSString *)kCGImagePropertyGIFDictionary];
+        NSNumber *delay = gifProperties[(NSString *)kCGImagePropertyGIFUnclampedDelayTime];
+        if (!delay || delay.doubleValue <= 0.0) {
+            delay = gifProperties[(NSString *)kCGImagePropertyGIFDelayTime];
+        }
+        duration += (delay && delay.doubleValue > 0.0) ? delay.doubleValue : 0.1;
+    }
+    CFRelease(source);
+    if (frames.count < 2 || duration <= 0.0) return frames.firstObject;
+    return [UIImage animatedImageWithImages:frames duration:duration];
+}
 
 @implementation MYCustomFaceView {
-    UILabel *_pocLabel;
+    UILabel *_headerLabel;
+    UILabel *_statusLabel;
+    UIImageView *_vaultBoyView;
+    UILabel *_moveLabel;
+    UILabel *_stepsLabel;
+    UILabel *_exerciseLabel;
+    UILabel *_standLabel;
+    UILabel *_dateLabel;
+    UILabel *_batteryLabel;
+    UILabel *_weatherLabel;
     NTKDigitalTimeLabel *_digitalTimeLabel;
+    UIView *_topRule;
+    UIView *_centerMeter;
+    UIView *_footerRule;
+    UIView *_moveBar;
+    UIView *_stepsBar;
+    UIView *_exerciseBar;
+    UIView *_standBar;
+    UIView *_batteryBar;
 }
 
 - (instancetype)initWithFaceStyle:(NSInteger)style
@@ -11,27 +96,63 @@
                 clientIdentifier:(NSString *)clientIdentifier {
     self = [super initWithFaceStyle:style forDevice:device clientIdentifier:clientIdentifier];
     if (self) {
-        self.backgroundColor = [UIColor colorWithWhite:0.04 alpha:1.0];
-        // NTKDigitalFaceView's default _timeLabelOptions returns zero.
-        // The inherited factory allocates its receiver (NTKDigitalTimeLabel).
+        self.backgroundColor = UIColor.blackColor;
+        self.clipsToBounds = YES;
+
+        _headerLabel = MYPipLabel(@"STAT   INV   DATA   MAP   RADIO", 7.4, NSTextAlignmentCenter);
+        _statusLabel = MYPipLabel(@"STATUS     SPECIAL     PERKS", 7.0, NSTextAlignmentCenter);
+        _moveLabel = MYPipLabel(@"MOVE\n150 KCAL", 6.3, NSTextAlignmentCenter);
+        _stepsLabel = MYPipLabel(@"STEPS\n2003", 6.3, NSTextAlignmentCenter);
+        _exerciseLabel = MYPipLabel(@"EXERCISE\n3 MIN", 6.0, NSTextAlignmentCenter);
+        _standLabel = MYPipLabel(@"STAND\n5 H", 6.3, NSTextAlignmentCenter);
+        _dateLabel = MYPipLabel(@"", 7.2, NSTextAlignmentLeft);
+        _batteryLabel = MYPipLabel(@"BATT 60%", 6.2, NSTextAlignmentLeft);
+        _weatherLabel = MYPipLabel(@"69°F", 6.2, NSTextAlignmentRight);
+
+        for (UILabel *label in @[_headerLabel, _statusLabel, _moveLabel, _stepsLabel,
+                                 _exerciseLabel, _standLabel, _dateLabel,
+                                 _batteryLabel, _weatherLabel]) {
+            [self addSubview:label];
+        }
+
+        _topRule = MYPipRule();
+        _centerMeter = MYPipRule();
+        _footerRule = MYPipRule();
+        _moveBar = MYPipRule();
+        _stepsBar = MYPipRule();
+        _exerciseBar = MYPipRule();
+        _standBar = MYPipRule();
+        _batteryBar = MYPipRule();
+        for (UIView *rule in @[_topRule, _centerMeter, _footerRule, _moveBar,
+                               _stepsBar, _exerciseBar, _standBar, _batteryBar]) {
+            [self addSubview:rule];
+        }
+
+        UIImage *sprite = MYAnimatedVaultBoySprite();
+        if (sprite) {
+            _vaultBoyView = [[UIImageView alloc] initWithImage:sprite];
+            _vaultBoyView.contentMode = UIViewContentModeScaleAspectFit;
+            _vaultBoyView.layer.magnificationFilter = kCAFilterNearest;
+            [self addSubview:_vaultBoyView];
+            [_vaultBoyView startAnimating];
+        }
+
+        NSDateFormatter *dateFormatter = [[NSDateFormatter alloc] init];
+        dateFormatter.dateFormat = @"yyyy.MM.dd";
+        _dateLabel.text = [dateFormatter stringFromDate:NSDate.date];
+
+        // Keep the verified native time label; the visual framing is ours.
         _digitalTimeLabel = [NTKDigitalTimeLabel labelWithOptions:0 forDevice:device];
         if (!_digitalTimeLabel) {
             NSLog(@"Custom Face PoC: native time label factory returned nil");
             return nil;
         }
-        [_digitalTimeLabel setFont:[UIFont monospacedDigitSystemFontOfSize:40.0
+        [_digitalTimeLabel setFont:[UIFont monospacedDigitSystemFontOfSize:19.0
                                                                  weight:UIFontWeightRegular]];
-        [_digitalTimeLabel setTextColor:UIColor.whiteColor];
+        [_digitalTimeLabel setTextColor:MYPipGreen()];
         [self setTimeView:_digitalTimeLabel];
         [[self rootContainerView] addSubview:_digitalTimeLabel];
         NSLog(@"Custom Face PoC: assigned timeView=%@", NSStringFromClass(self.timeView.class));
-        _pocLabel = [[UILabel alloc] initWithFrame:CGRectZero];
-        _pocLabel.text = @"Custom Face PoC";
-        _pocLabel.textColor = UIColor.whiteColor;
-        _pocLabel.textAlignment = NSTextAlignmentCenter;
-        _pocLabel.font = [UIFont systemFontOfSize:14.0];
-        _pocLabel.adjustsFontSizeToFitWidth = YES;
-        [self addSubview:_pocLabel];
     }
     return self;
 }
@@ -39,12 +160,54 @@
 - (void)layoutSubviews {
     [super layoutSubviews];
     UIView *container = [self rootContainerView];
-    [_digitalTimeLabel sizeToFit];
-    _digitalTimeLabel.center = CGPointMake(CGRectGetMidX(container.bounds),
-                                          CGRectGetMidY(container.bounds));
-    _pocLabel.frame = CGRectMake(8.0, CGRectGetMidY(self.bounds) + 42.0,
-                                MAX(0.0, CGRectGetWidth(self.bounds) - 16.0), 24.0);
-    [self bringSubviewToFront:_pocLabel];
+    CGFloat scale = MIN(CGRectGetWidth(self.bounds) / 208.0,
+                        CGRectGetHeight(self.bounds) / 248.0);
+    CGFloat xOffset = (CGRectGetWidth(self.bounds) - 208.0 * scale) * 0.5;
+    CGFloat yOffset = (CGRectGetHeight(self.bounds) - 248.0 * scale) * 0.5;
+#define PIP_FRAME(x, y, w, h) CGRectMake(xOffset + (x) * scale, yOffset + (y) * scale, \
+                                         (w) * scale, (h) * scale)
+    _headerLabel.frame = PIP_FRAME(4, 4, 200, 15);
+    _statusLabel.frame = PIP_FRAME(4, 21, 200, 12);
+    _topRule.frame = PIP_FRAME(5, 35, 198, 1);
+
+    _vaultBoyView.frame = PIP_FRAME(70, 40, 68, 112);
+    _moveBar.frame = PIP_FRAME(11, 63, 35, 5);
+    _moveLabel.frame = PIP_FRAME(3, 69, 51, 22);
+    _stepsBar.frame = PIP_FRAME(162, 63, 35, 5);
+    _stepsLabel.frame = PIP_FRAME(154, 69, 51, 22);
+    _exerciseBar.frame = PIP_FRAME(11, 125, 35, 5);
+    _exerciseLabel.frame = PIP_FRAME(3, 131, 51, 22);
+    _standBar.frame = PIP_FRAME(162, 125, 35, 5);
+    _standLabel.frame = PIP_FRAME(154, 131, 51, 22);
+    _centerMeter.frame = PIP_FRAME(87, 153, 34, 5);
+
+    _dateLabel.frame = PIP_FRAME(7, 166, 82, 22);
+    _digitalTimeLabel.frame = PIP_FRAME(126, 164, 76, 26);
+    _footerRule.frame = PIP_FRAME(5, 193, 198, 1);
+    _batteryLabel.frame = PIP_FRAME(7, 199, 55, 15);
+    _batteryBar.frame = PIP_FRAME(65, 204, 68, 5);
+    _weatherLabel.frame = PIP_FRAME(143, 199, 58, 15);
+
+    [self bringSubviewToFront:_headerLabel];
+    [self bringSubviewToFront:_statusLabel];
+    [self bringSubviewToFront:_topRule];
+    if (_vaultBoyView) [self bringSubviewToFront:_vaultBoyView];
+    [self bringSubviewToFront:_moveBar];
+    [self bringSubviewToFront:_moveLabel];
+    [self bringSubviewToFront:_stepsBar];
+    [self bringSubviewToFront:_stepsLabel];
+    [self bringSubviewToFront:_exerciseBar];
+    [self bringSubviewToFront:_exerciseLabel];
+    [self bringSubviewToFront:_standBar];
+    [self bringSubviewToFront:_standLabel];
+    [self bringSubviewToFront:_centerMeter];
+    [self bringSubviewToFront:_dateLabel];
+    [container bringSubviewToFront:_digitalTimeLabel];
+    [self bringSubviewToFront:_footerRule];
+    [self bringSubviewToFront:_batteryLabel];
+    [self bringSubviewToFront:_batteryBar];
+    [self bringSubviewToFront:_weatherLabel];
+#undef PIP_FRAME
 }
 @end
 
@@ -82,6 +245,17 @@ static MYCustomFace *MYNativeFace;
 static __weak UIWindow *MYNativePreviousKeyWindow;
 static BOOL MYNativeActive;
 
+// The app-owned preview may control UIKit's status bar independently of the
+// NTKFaceViewController path. Keep this override local to the preview window.
+@interface MYCustomFacePreviewController : UIViewController
+@end
+
+@implementation MYCustomFacePreviewController
+- (BOOL)prefersStatusBarHidden {
+    return YES;
+}
+@end
+
 BOOL MYPresentCustomFaceExperiment(NSInteger style) {
     if (![NSThread isMainThread]) {
         NSLog(@"Custom Face PoC requires the main thread");
@@ -111,12 +285,13 @@ BOOL MYPresentCustomFaceExperiment(NSInteger style) {
     MYCustomFace *face = nil;
     MYCustomFaceView *view = MYCreateCustomFaceView(style, &face);
     if (!view) return NO;
-    UIViewController *controller = [[UIViewController alloc] init];
+    MYCustomFacePreviewController *controller = [[MYCustomFacePreviewController alloc] init];
     controller.view = view;
     UIWindow *window = [[UIWindow alloc] initWithWindowScene:scene];
     window.frame = scene.effectiveGeometry.coordinateSpace.bounds;
     window.windowLevel = UIWindowLevelAlert + 1;
     window.rootViewController = controller;
+    [controller setNeedsStatusBarAppearanceUpdate];
     MYExperimentFace = face;
     MYExperimentWindow = window;
     [window makeKeyAndVisible];
