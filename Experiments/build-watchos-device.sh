@@ -60,6 +60,7 @@ xcrun --sdk watchos clang "${common[@]}" -dynamiclib \
 bundle_dir="$output_dir/FaceBundles/MYLocalFaceBundle.bundle"
 mkdir -p "$bundle_dir"
 cp "$experiment_dir/LocalFaceBundle/Info.plist" "$bundle_dir/Info.plist"
+/usr/libexec/PlistBuddy -c 'Set :CFBundleSupportedPlatforms:0 WatchOS' "$bundle_dir/Info.plist"
 xcrun --sdk watchos clang "${common[@]}" -bundle \
   "$experiment_dir/LocalFaceBundle/MYLocalFaceBundle.m" \
   "$output_dir/MYCustomFaceExperiment.dylib" "$ntk_binary" \
