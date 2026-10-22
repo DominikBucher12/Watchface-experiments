@@ -172,8 +172,147 @@ if (![found.bundleIdentifier isEqualToString:expected]) return;
     NSLog(@"ARGON_DISCOVERY END");
 }
 
+// Factory-chain experiment, confined to WatchFaceLab. No Face Library mutation.
+static id MYFCManager = nil;
+static id MYFCBundle = nil;
+static Class MYFCOriginalClass = Nil;
+static Class MYFCTestClass = Nil;
+static IMP MYFCOriginalLookupIMP = NULL;
+static BOOL MYFCEnabled = NO;
+static NSString *const MYFCIdentifier = @"dev.develodom.WatchFaceLab.LocalFaceBundle";
+
+typedef id (*MYFCLookupFn)(id, SEL, id, id, BOOL);
+static id MYFCLookup(id receiver, SEL selector, id identifier, id device, BOOL migration) {
+    if (MYFCEnabled && receiver == MYFCManager && [identifier isEqual:MYFCIdentifier]) {
+        NSLog(@"FACE_FACTORY lookup=LOCAL matched=1");
+        return MYFCBundle;
+    }
+    return ((MYFCLookupFn)MYFCOriginalLookupIMP)(receiver, selector, identifier, device, migration);
+}
+
+static void MYFactoryChainV1(void) {
+    NSLog(@"FACE_FACTORY BEGIN");
+    if (![NSThread isMainThread] ||
+        ![[NSBundle mainBundle].bundleIdentifier isEqualToString:@"dev.develodom.WatchFaceLab"]) {
+        NSLog(@"FACE_FACTORY SKIP unexpected host/thread");
+        NSLog(@"FACE_FACTORY END");
+        return;
+    }
+    Class managerClass = objc_lookUpClass("NTKFaceBundleManager");
+    Class loaderClass = objc_lookUpClass("NTKFaceBundleLoader");
+    Class descriptorClass = objc_lookUpClass("NTKFaceDescriptor");
+    Class faceClass = objc_lookUpClass("NTKFace");
+    Class deviceClass = objc_lookUpClass("CLKDevice");
+    Class customClass = objc_lookUpClass("MYCustomFace");
+    SEL shared = sel_registerName("sharedManager");
+    SEL loaderFactory = sel_registerName("faceBundleLoaderWithDirectories:appBundleIdentifierPrefixes:");
+    SEL loadBundle = sel_registerName("loadFaceBundleWithIdentifier:");
+    SEL lookup = sel_registerName("faceBundleForBundleIdentifier:onDevice:forMigration:");
+    SEL descriptorInit = sel_registerName("initWithBundleIdentifier:");
+    SEL faceFactory = sel_registerName("defaultFaceFromFaceDescriptor:forDevice:");
+    SEL currentDevice = sel_registerName("currentDevice");
+    SEL faceStyle = sel_registerName("faceStyle");
+    SEL bundleID = sel_registerName("bundleIdentifier");
+    Method lm = managerClass ? class_getInstanceMethod(managerClass, lookup) : NULL;
+    Method lf = loaderClass ? class_getClassMethod(loaderClass, loaderFactory) : NULL;
+    Method li = loaderClass ? class_getInstanceMethod(loaderClass, loadBundle) : NULL;
+    Method di = descriptorClass ? class_getInstanceMethod(descriptorClass, descriptorInit) : NULL;
+    Method ff = faceClass ? class_getClassMethod(faceClass, faceFactory) : NULL;
+    Method fs = faceClass ? class_getInstanceMethod(faceClass, faceStyle) : NULL;
+    Method bi = faceClass ? class_getInstanceMethod(faceClass, bundleID) : NULL;
+    NSLog(@"FACE_FACTORY ABI lookup=%s descriptor=%s factory=%s",
+          lm ? method_getTypeEncoding(lm) : "missing",
+          di ? method_getTypeEncoding(di) : "missing",
+          ff ? method_getTypeEncoding(ff) : "missing");
+    if (!lm || !lf || !li || !di || !ff || !fs || !bi || !deviceClass || !customClass ||
+        strcmp(method_getTypeEncoding(lm), "@36@0:8@16@24B32") ||
+        strcmp(method_getTypeEncoding(lf), "@32@0:8@16@24") ||
+        strcmp(method_getTypeEncoding(li), "@24@0:8@16") ||
+        strcmp(method_getTypeEncoding(di), "@24@0:8@16") ||
+        strcmp(method_getTypeEncoding(ff), "@32@0:8@16@24") ||
+        strcmp(method_getTypeEncoding(fs), "q16@0:8") ||
+        strcmp(method_getTypeEncoding(bi), "@16@0:8")) {
+        NSLog(@"FACE_FACTORY SKIP ABI mismatch (send log)");
+        NSLog(@"FACE_FACTORY END");
+        return;
+    }
+    id manager = ((id (*)(id, SEL))objc_msgSend)((id)managerClass, shared);
+    id device = ((id (*)(id, SEL))objc_msgSend)((id)deviceClass, currentDevice);
+    if (!manager || !device || object_getClass(manager) != managerClass) {
+        NSLog(@"FACE_FACTORY SKIP manager/device unavailable or manager already hooked");
+        NSLog(@"FACE_FACTORY END");
+        return;
+    }
+    NSURL *root = [NSBundle mainBundle].bundleURL;
+    NSBundle *local = [NSBundle bundleWithURL:[root URLByAppendingPathComponent:@"MYLocalFaceBundle.bundle" isDirectory:YES]];
+    if (![local.bundleIdentifier isEqualToString:MYFCIdentifier]) {
+        NSLog(@"FACE_FACTORY SKIP local bundle not found");
+        NSLog(@"FACE_FACTORY END");
+        return;
+    }
+    id loader = ((id (*)(id, SEL, id, id))objc_msgSend)((id)loaderClass, loaderFactory,
+        [NSSet setWithObject:root], [NSSet setWithObject:@"dev.develodom.WatchFaceLab"]);
+    id bundle = loader ? ((id (*)(id, SEL, id))objc_msgSend)(loader, loadBundle, MYFCIdentifier) : nil;
+    if (!bundle || ![NSStringFromClass([bundle class]) isEqualToString:@"MYLocalFaceBundle"]) {
+        NSLog(@"FACE_FACTORY SKIP isolated loader failed");
+        NSLog(@"FACE_FACTORY END");
+        return;
+    }
+    BOOL installed = NO;
+    BOOL success = NO;
+    @try {
+        id baseline = ((id (*)(id, SEL, id, id, BOOL))objc_msgSend)(manager, lookup, MYFCIdentifier, device, NO);
+        NSLog(@"FACE_FACTORY baselineAbsent=%d", baseline == nil);
+        if (baseline) return;
+        if (!MYFCTestClass) {
+            if (objc_lookUpClass("MYFaceFactoryV1ScopedManager")) return;
+            MYFCTestClass = objc_allocateClassPair(managerClass, "MYFaceFactoryV1ScopedManager", 0);
+            if (!MYFCTestClass || !class_addMethod(MYFCTestClass, lookup, (IMP)MYFCLookup, method_getTypeEncoding(lm))) return;
+            objc_registerClassPair(MYFCTestClass);
+        }
+        if (class_getInstanceSize(managerClass) != class_getInstanceSize(MYFCTestClass)) return;
+        MYFCOriginalClass = managerClass;
+        MYFCManager = manager;
+        MYFCBundle = bundle;
+        MYFCOriginalLookupIMP = method_getImplementation(lm);
+        @synchronized(manager) {
+            MYFCEnabled = YES;
+            object_setClass(manager, MYFCTestClass);
+            installed = YES;
+        }
+        id descriptor = ((id (*)(id, SEL, id))objc_msgSend)(
+            ((id (*)(id, SEL))objc_msgSend)((id)descriptorClass, @selector(alloc)), descriptorInit, MYFCIdentifier);
+        if (!descriptor) { NSLog(@"FACE_FACTORY descriptor=nil"); return; }
+        id face = ((id (*)(id, SEL, id, id))objc_msgSend)((id)faceClass, faceFactory, descriptor, device);
+        NSInteger style = face ? ((NSInteger (*)(id, SEL))objc_msgSend)(face, faceStyle) : -1;
+        id identifier = face ? ((id (*)(id, SEL))objc_msgSend)(face, bundleID) : nil;
+        success = face && [face isKindOfClass:customClass] && style == 44 && [identifier isEqual:MYFCIdentifier];
+        NSLog(@"FACE_FACTORY RESULT class=%@ style=%ld identifier=%@ pass=%d",
+              face ? NSStringFromClass([face class]) : @"nil", (long)style, identifier, success);
+    } @catch (NSException *ex) {
+        NSLog(@"FACE_FACTORY EXCEPTION name=%@ reason=%@", ex.name, ex.reason);
+    } @finally {
+        if (installed) {
+            @synchronized(manager) {
+                if (object_getClass(manager) == MYFCTestClass) {
+                    object_setClass(manager, MYFCOriginalClass);
+                    MYFCEnabled = NO;
+                    MYFCBundle = nil;
+                    MYFCManager = nil;
+                } else {
+                    NSLog(@"FACE_FACTORY WARNING class unexpectedly changed; restart app");
+                }
+            }
+            BOOL restored = object_getClass(manager) == managerClass;
+            NSLog(@"FACE_FACTORY RESTORED=%d success=%d", restored, success);
+        }
+        NSLog(@"FACE_FACTORY END");
+    }
+}
+
 __attribute__((visibility("default"))) void MYInspectArgonDescriptorsV3(void) {
     NSLog(@"ARGON_V3 BEGIN");
+    MYFactoryChainV1();
     MYArgonDiscoveryV1();
     MYArgonLocalParserTest();
     Class managerClass = objc_lookUpClass("NTKFaceBundleManager");
