@@ -46,6 +46,7 @@ enum CustomFaceLoader {
             .appendingPathComponent("MYLocalFaceBundle.bundle", isDirectory: true)
 
         let result = discover(directory.deletingLastPathComponent().path as NSString)
+        print("Nevim co dela result ale tu mas: \(result)")
     }
     
     static func present() {

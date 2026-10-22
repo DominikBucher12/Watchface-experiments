@@ -72,8 +72,109 @@ static void MYArgonLocalParserTest(void) {
 }
 
 // watchOS 27.0.1 24R365. Read-only: no extraction, XPC requests or database mutation.
+// Isolated, read-only local bundle discovery. Never touches the shared manager.
+static void MYArgonDiscoveryV1(void) {
+    NSLog(@"ARGON_DISCOVERY BEGIN");
+    @try {
+        NSString *expected = @"dev.develodom.WatchFaceLab.LocalFaceBundle";
+        NSURL *root = [NSBundle mainBundle].bundleURL;
+        NSBundle *local = [NSBundle bundleWithURL:[root URLByAppendingPathComponent:@"MYLocalFaceBundle.bundle" isDirectory:YES]];
+        if (![local.bundleIdentifier isEqualToString:expected]) {
+            NSLog(@"ARGON_DISCOVERY SKIP local bundle missing at app root");
+            NSLog(@"ARGON_DISCOVERY END");
+            return;
+        }
+        Class loaderClass = objc_lookUpClass("NTKFaceBundleLoader");
+        Class descriptorClass = objc_lookUpClass("NTKArgonKeyDescriptor");
+        SEL make = sel_registerName("faceBundleLoaderWithDirectories:appBundleIdentifierPrefixes:");
+        SEL enumerate = sel_registerName("enumerateFaceBundleClassesIgnoringCache:withBlock:");
+        SEL parser = sel_registerName("keyDescriptorFromBundle:");
+        SEL filename = sel_registerName("fileName");
+        Method factoryMethod = loaderClass ? class_getClassMethod(loaderClass, make) : NULL;
+        Method enumMethod = loaderClass ? class_getInstanceMethod(loaderClass, enumerate) : NULL;
+        Method parserMethod = descriptorClass ? class_getClassMethod(descriptorClass, parser) : NULL;
+        Method filenameMethod = descriptorClass ? class_getInstanceMethod(descriptorClass, filename) : NULL;
+        const char *factoryABI = factoryMethod ? method_getTypeEncoding(factoryMethod) : "missing";
+        const char *enumABI = enumMethod ? method_getTypeEncoding(enumMethod) : "missing";
+        NSLog(@"ARGON_DISCOVERY ABI factory=%s enumerate=%s", factoryABI, enumABI);
+        if (!factoryMethod || !enumMethod || !parserMethod || !filenameMethod ||
+            strcmp(factoryABI, "@32@0:8@16@24") != 0 ||
+            strcmp(enumABI, "v28@0:8B16@?20") != 0 ||
+            strcmp(method_getTypeEncoding(parserMethod), "@24@0:8@16") != 0 ||
+            strcmp(method_getTypeEncoding(filenameMethod), "@16@0:8") != 0) {
+            NSLog(@"ARGON_DISCOVERY SKIP unexpected ABI (send this log)");
+            NSLog(@"ARGON_DISCOVERY END");
+            return;
+        }
+        id loader = ((id (*)(id, SEL, id, id))objc_msgSend)((id)loaderClass, make,
+              [NSSet setWithObject:root], [NSSet setWithObject:@"dev.develodom.WatchFaceLab"]);
+        if (!loader) {
+            NSLog(@"ARGON_DISCOVERY FAIL loader=nil");
+            NSLog(@"ARGON_DISCOVERY END");
+            return;
+        }
+        __block NSUInteger visited = 0;
+        __block NSUInteger ownMatches = 0;
+        __block NSUInteger parsed = 0;
+        void (^visitor)(Class) = ^(Class faceBundleClass) {
+            visited++;
+
+            NSLog(@"ARGON_DISCOVERY CALLBACK raw=%p",
+                  (__bridge void *)faceBundleClass);
+
+            if (!faceBundleClass) {
+                NSLog(@"ARGON_DISCOVERY CALLBACK nil");
+                return;
+            }
+
+            BOOL isClass = object_isClass(faceBundleClass);
+            NSLog(@"ARGON_DISCOVERY CALLBACK isClass=%d objectType=%s",
+                  isClass,
+                  object_getClassName((id)faceBundleClass));
+
+            if (!isClass) {
+                Class resolvedClass = object_getClass((id)faceBundleClass);
+                NSLog(@"ARGON_DISCOVERY CALLBACK resolvedClass=%@",
+                      NSStringFromClass(resolvedClass));
+                faceBundleClass = resolvedClass;
+            }
+
+            NSLog(@"ARGON_DISCOVERY CALLBACK className=%@",
+                  NSStringFromClass(faceBundleClass));
+            NSBundle *found = [NSBundle bundleForClass:faceBundleClass];
+            NSLog(@"ARGON_DISCOVERY CLASS name=%@ bundle=%@ path=%@",
+      NSStringFromClass(faceBundleClass),
+      found.bundleIdentifier,
+      found.bundlePath);
+NSLog(@"ARGON_DISCOVERY LOCAL bundle=%@ path=%@",
+      local.bundleIdentifier,
+      local.bundlePath);
+if (![found.bundleIdentifier isEqualToString:expected]) return;
+            ownMatches++;
+            id desc = ((id (*)(id, SEL, id))objc_msgSend)((id)descriptorClass, parser, found);
+            if (desc && [desc isKindOfClass:descriptorClass]) {
+                parsed++;
+                id name = ((id (*)(id, SEL))objc_msgSend)(desc, filename);
+                NSLog(@"ARGON_DISCOVERY match=YES class=%@ parser=PASS filename=%@",
+                      NSStringFromClass(faceBundleClass),
+                      [name isKindOfClass:NSString.class] ? name : @"<invalid>");
+            } else {
+                NSLog(@"ARGON_DISCOVERY match=YES class=%@ parser=FAIL", NSStringFromClass(faceBundleClass));
+            }
+        };
+        ((void (*)(id, SEL, BOOL, id))objc_msgSend)(loader, enumerate, YES, visitor);
+        NSLog(@"ARGON_DISCOVERY RESULT visited=%lu ownMatches=%lu parsed=%lu status=%@",
+              (unsigned long)visited, (unsigned long)ownMatches, (unsigned long)parsed,
+              (ownMatches && parsed == ownMatches) ? @"PASS" : @"NOT_DISCOVERED");
+    } @catch (NSException *ex) {
+        NSLog(@"ARGON_DISCOVERY exception=%@", ex.name);
+    }
+    NSLog(@"ARGON_DISCOVERY END");
+}
+
 __attribute__((visibility("default"))) void MYInspectArgonDescriptorsV3(void) {
     NSLog(@"ARGON_V3 BEGIN");
+    MYArgonDiscoveryV1();
     MYArgonLocalParserTest();
     Class managerClass = objc_lookUpClass("NTKFaceBundleManager");
     SEL shared = sel_registerName("sharedManager");
