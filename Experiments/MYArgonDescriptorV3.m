@@ -1,3 +1,4 @@
+#import <dlfcn.h>
 #import <Foundation/Foundation.h>
 #import <objc/runtime.h>
 #import <objc/message.h>
@@ -311,7 +312,62 @@ static void MYFactoryChainV1(void) {
     }
 }
 
-__attribute__((visibility("default"))) void MYInspectArgonDescriptorsV3(void) {
+__attribute__((visibility("default"))) 
+// MY_ARGON_RUNTIME_METHODS_V1
+static void MYPrintArgonRuntimeMethods(void) {
+    const char *names[] = {
+        "NTKDArgonServiceXPCWrapper",
+        "NTKDArgonService",
+        "NTKArgonManager",
+        "NTKArgonLocalKeyDatabase",
+        "NTKArgonKeyDescriptor"
+    };
+
+    for (unsigned i = 0; i < sizeof(names)/sizeof(names[0]); i++) {
+        Class cls = objc_lookUpClass(names[i]);
+        NSLog(@"ARGON_METHODS CLASS=%s available=%d", names[i], cls != Nil);
+        if (!cls) continue;
+
+        for (int kind = 0; kind < 2; kind++) {
+            Class target = kind ? object_getClass(cls) : cls;
+            unsigned count = 0;
+            Method *methods = class_copyMethodList(target, &count);
+
+            for (unsigned j = 0; j < count; j++) {
+                SEL selector = method_getName(methods[j]);
+                NSString *name = NSStringFromSelector(selector);
+
+                NSString *lower = name.lowercaseString;
+                if (![lower containsString:@"key"] &&
+                    ![lower containsString:@"descriptor"] &&
+                    ![lower containsString:@"bundle"] &&
+                    ![lower containsString:@"ingest"] &&
+                    ![lower containsString:@"extract"] &&
+                    ![lower containsString:@"service"] &&
+                    ![lower containsString:@"add"]) continue;
+
+                NSLog(@"ARGON_METHODS %c[%s %@] ABI=%s",
+                      kind ? '+' : '-',
+                      names[i],
+                      name,
+                      method_getTypeEncoding(methods[j]));
+            }
+            free(methods);
+        }
+    }
+}
+
+void MYInspectArgonDescriptorsV3(void) {
+    // MY_ARGON_INTERNAL_BUILD_CHECK
+    void *symbol = dlsym(RTLD_DEFAULT, "NTKInternalBuild");
+    if (!symbol) {
+        NSLog(@"ARGON_GATE NTKInternalBuild symbol unavailable");
+    } else {
+        BOOL (*internalBuild)(void) = (BOOL (*)(void))symbol;
+        NSLog(@"ARGON_GATE NTKInternalBuild=%d", internalBuild());
+    }
+
+    MYPrintArgonRuntimeMethods();
     NSLog(@"ARGON_V3 BEGIN");
     MYFactoryChainV1();
     MYArgonDiscoveryV1();

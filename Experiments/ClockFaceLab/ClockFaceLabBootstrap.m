@@ -290,6 +290,47 @@ __attribute__((constructor)) static void MYClockFaceLabStart(void) {
                 }
             });
         }
+
+        // CLOCKFACE_LAB OWNED_BRIDGE_V1
+        BOOL (*ownedStart)(NSString *) =
+            (BOOL (*)(NSString *))dlsym(handle, "MYStartOwnedDiscoveryExperiment");
+        BOOL (*ownedCheck)(void) =
+            (BOOL (*)(void))dlsym(handle, "MYCheckOwnedDiscoveryExperiment");
+
+        NSLog(@"CLOCKFACE_LAB OWNED_BRIDGE symbols start=%d check=%d",
+              ownedStart != NULL, ownedCheck != NULL);
+
+        if (ownedStart && ownedCheck) {
+            dispatch_after(
+                dispatch_time(DISPATCH_TIME_NOW, (int64_t)(10 * NSEC_PER_SEC)),
+                dispatch_get_main_queue(), ^{
+                    NSString *directory = [[[NSBundle mainBundle] bundlePath]
+                        stringByAppendingPathComponent:@"FaceBundles"];
+
+                    @try {
+                        NSLog(@"CLOCKFACE_LAB OWNED_BRIDGE INSTALL directory=%@", directory);
+                        BOOL installed = ownedStart(directory);
+                        NSLog(@"CLOCKFACE_LAB OWNED_BRIDGE INSTALLED=%d", installed);
+
+                        if (installed) {
+                            dispatch_after(
+                                dispatch_time(DISPATCH_TIME_NOW, (int64_t)(3 * NSEC_PER_SEC)),
+                                dispatch_get_main_queue(), ^{
+                                    @try {
+                                        BOOL result = ownedCheck();
+                                        NSLog(@"CLOCKFACE_LAB OWNED_BRIDGE RESULT=%d", result);
+                                    } @catch (NSException *e) {
+                                        NSLog(@"CLOCKFACE_LAB OWNED_BRIDGE CHECK_EXCEPTION %@: %@",
+                                              e.name, e.reason);
+                                    }
+                                });
+                        }
+                    } @catch (NSException *e) {
+                        NSLog(@"CLOCKFACE_LAB OWNED_BRIDGE INSTALL_EXCEPTION %@: %@",
+                              e.name, e.reason);
+                    }
+                });
+        }
         // CLOCKFACE_LAB MANAGER_PROBE V1
         // Observe the real ClockFace process after its initial application setup.
         dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(3 * NSEC_PER_SEC)), dispatch_get_main_queue(), ^{

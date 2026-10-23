@@ -1,5 +1,5 @@
 // Separate owned-app build of the guarded bridge implementation. No automatic entry point.
-#define MY_BRIDGE_HOST_IDENTIFIER @"dev.develodom.WatchFaceLab"
+#define MY_BRIDGE_HOST_IDENTIFIER @"dev.develodom.ClockFaceLab"
 #define MY_BRIDGE_CLASS_NAME "MYOwnedSessionBundleManager"
 #define MYClockFaceBridgePreflight MYOwnedBridgePreflight
 #define MYClockFaceBridgeInstall MYOwnedBridgeInstall
@@ -16,7 +16,7 @@ static BOOL MYOwnedGalleryPassed;
 static NSArray<NSString *> *MYDiscoveryIdentifiers(NTKFaceBundleManager *manager, CLKDevice *device) {
     NSMutableArray<NSString *> *identifiers = [NSMutableArray array];
     [manager enumerateFaceBundlesOnDevice:device includingLegacy:YES withBlock:^(NTKFaceBundle *bundle) {
-        NSString *identifier = [bundle.class identifier];
+        NSString *identifier = MYFaceBundleIdentifier(bundle);
         // Preserve unidentified entries too, so removal checks cannot silently omit them.
         [identifiers addObject:identifier ?: [@"<unidentified>:" stringByAppendingString:NSStringFromClass(bundle.class)]];
     }];

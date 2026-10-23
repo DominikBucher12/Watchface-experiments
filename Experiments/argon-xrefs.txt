@@ -1,0 +1,37 @@
+STRING 0x1b48e87ca file+0x3f07ca load_unencrypted_argon_bundles
+STRING 0x1b48e7575 file+0x3ef575 /AppleInternal/Library/NanoTimeKit/FaceSupport/UnencryptedBundles/
+POINTER 0x1e9ad90f0 -> 0x1b48e7575 /AppleInternal/Library/NanoTimeKit/FaceSupport/UnencryptedBundles/
+
+Summary: 2 strings; 1 direct pointers; 1 potential code references
+
+XREF 0x1b4602e2c -> 0x1b48e87ca [ADRP+ADD from 0x1b4602e28] load_unencrypted_argon_bundles
+1b489d54c:	00 40 03 91	add	x0, x0, #0xd0 ; literal pool for: "NanoTimeKit.StarbearPickerNavigationController"
+1b489d550:	e2 02 00 d0	adrp	x2, 94 ; 0x1b48fb000
+1b489d554:	42 00 12 91	add	x2, x2, #0x480 ; literal pool for: "init(nibName:bundle:)"
+1b489d558:	c1 05 80 52	mov	w1, #0x2e
+1b489d55c:	a3 02 80 52	mov	w3, #0x15
+1b489d560:	04 00 80 52	mov	w4, #0x0
+1b489d564:	6d 0c 04 94	bl	0x1b49a0718 ; symbol stub for: __swift_stdlib_reportUnimplementedInitializer
+1b489d568:	20 00 20 d4	brk	#0x1
+1b489d56c:	fd 7b bf a9	stp	x29, x30, [sp, #-0x10]!
+1b489d570:	fd 03 00 91	mov	x29, sp
+1b489d574:	e0 02 00 f0	adrp	x0, 95 ; 0x1b48fc000
+1b489d578:	00 c0 06 91	add	x0, x0, #0x1b0 ; literal pool for: "NanoTimeKit.LPRLayerLeftAlignedTimeNumbers"
+1b489d57c:	e2 02 00 b0	adrp	x2, 93 ; 0x1b48fa000
+1b489d580:	42 c0 29 91	add	x2, x2, #0xa70 ; literal pool for: "init()"
+1b489d584:	41 05 80 52	mov	w1, #0x2a
+1b489d588:	c3 00 80 52	mov	w3, #0x6
+1b489d58c:	04 00 80 52	mov	w4, #0x0
+1b489d590:	62 0c 04 94	bl	0x1b49a0718 ; symbol stub for: __swift_stdlib_reportUnimplementedInitializer
+1b489d594:	20 00 20 d4	brk	#0x1
+1b489d598:	fd 7b bf a9	stp	x29, x30, [sp, #-0x10]!
+1b489d59c:	fd 03 00 91	mov	x29, sp
+1b489d5a0:	e0 02 00 f0	adrp	x0, 95 ; 0x1b48fc000
+1b489d5a4:	00 00 09 91	add	x0, x0, #0x240 ; literal pool for: "NanoTimeKit.AlwaysOnStatistics"
+1b489d5a8:	e2 02 00 b0	adrp	x2, 93 ; 0x1b48fa000
+1b489d5ac:	42 c0 29 91	add	x2, x2, #0xa70 ; literal pool for: "init()"
+1b489d5b0:	c1 03 80 52	mov	w1, #0x1e
+1b489d5b4:	c3 00 80 52	mov	w3, #0x6
+1b489d5b8:	04 00 80 52	mov	w4, #0x0
+1b489d5bc:	57 0c 04 94	bl	0x1b49a0718 ; symbol stub for: __swift_stdlib_reportUnimplementedInitializer
+1b489d5c0:	20 00 20 d4	brk	#0x1

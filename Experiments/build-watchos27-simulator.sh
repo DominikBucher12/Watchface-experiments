@@ -12,7 +12,7 @@ xcrun --sdk watchsimulator clang \
   -Wl,-install_name,@rpath/$NAME.framework/$NAME \
   -framework Foundation \
   "$EXPERIMENTS/MYCustomFace.m" \
-  "$EXPERIMENTS/MYBundleDiscovery.m" \
+  "$EXPERIMENTS/MYBundleDiscovery.m" "$EXPERIMENTS/MYOwnedDiscovery.m" \
   "$EXPERIMENTS/MYArgonDescriptorV3.m" \
   "$EXPERIMENTS/MYArgonXPCReadOnlyProbe.m" \
   -o "$OUT/$NAME"

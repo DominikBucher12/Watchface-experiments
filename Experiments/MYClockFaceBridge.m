@@ -1,13 +1,14 @@
 // Opt-in preparation only. No constructors, automatic hooks, or persistent writes.
 #import "NTKPrivateInterfaces.h"
 #import <objc/runtime.h>
+#import <objc/message.h>
 #import <mach-o/dyld.h>
 #import <mach-o/loader.h>
 #import <TargetConditionals.h>
 #import <string.h>
 
-#if !TARGET_OS_WATCH || TARGET_OS_SIMULATOR || !defined(__arm64__)
-#error This bridge targets arm64 physical watchOS devices only.
+#if !TARGET_OS_WATCH || !TARGET_OS_SIMULATOR || !defined(__arm64__)
+#error This bridge targets arm64 watchOS Simulator only.
 #endif
 
 // IMPORTANT: This hook was reverse engineered on watchOS 26.5 simulator.
@@ -15,7 +16,7 @@
 // encodings have been independently verified on the target device.
 // Supply -DMY_VERIFIED_NTK_UUID=\"UUID\" only after validation.
 #ifndef MY_VERIFIED_NTK_UUID
-#define MY_VERIFIED_NTK_UUID "UNVERIFIED-WATCHOS27"
+#define MY_VERIFIED_NTK_UUID "FC474CFA-5407-3528-A346-6F6A6B424A35"
 #endif
 
 #ifndef MY_BRIDGE_HOST_IDENTIFIER
@@ -68,6 +69,16 @@ static BOOL MYContext(void) {
     return YES;
 }
 
+static NSString *MYFaceBundleIdentifier(NTKFaceBundle *bundle) {
+    if (!bundle) return nil;
+    Class cls = object_getClass(bundle);
+    SEL selector = sel_registerName("identifier");
+    if (cls && class_respondsToSelector(object_getClass(cls), selector)) {
+        return ((id (*)(id, SEL))objc_msgSend)((id)cls, selector);
+    }
+    return [NSBundle bundleForClass:cls].bundleIdentifier;
+}
+
 static BOOL MYMethodsMatch(Class cls) {
     Method enumerate = class_getInstanceMethod(cls,
         @selector(enumerateFaceBundlesOnDevice:includingLegacy:withBlock:));
@@ -90,7 +101,7 @@ static void MYEnumerate(id self, SEL selector, CLKDevice *device, BOOL legacy,
     }
     __block BOOL seen = NO;
     MYOriginalEnumerate(self, selector, device, legacy, ^(NTKFaceBundle *bundle) {
-        if ([[bundle.class identifier] isEqualToString:MYIdentifier]) seen = YES;
+        if ([MYFaceBundleIdentifier(bundle) isEqualToString:MYIdentifier]) seen = YES;
         block(bundle);
     });
     if (!seen && ![[extra faceClass] isRestrictedForDevice:device]) block(extra);
@@ -128,7 +139,7 @@ BOOL MYClockFaceBridgeInstall(NSString *directoryPath) {
     appBundleIdentifierPrefixes:[NSSet setWithObject:@"dev.develodom.WatchFaceLab"]];
     NTKFaceBundle *bundle = [loader loadFaceBundleWithIdentifier:MYIdentifier];
     if (!bundle || ![NSStringFromClass(bundle.class) isEqualToString:@"MYLocalFaceBundle"] ||
-        ![[bundle.class identifier] isEqualToString:MYIdentifier] ||
+        ![MYFaceBundleIdentifier(bundle) isEqualToString:MYIdentifier] ||
         ![[NSBundle bundleForClass:bundle.class].bundleURL.URLByResolvingSymlinksInPath.path
           isEqualToString:bundleURL.URLByResolvingSymlinksInPath.path]) return NO;
     NTKFaceBundleManager *manager = [NTKFaceBundleManager sharedManager];
@@ -170,7 +181,7 @@ BOOL MYClockFaceBridgeCheck(void) {
     if (!device) return NO;
     __block NSUInteger matches = 0;
     [MYManager enumerateFaceBundlesOnDevice:device includingLegacy:YES withBlock:^(NTKFaceBundle *bundle) {
-        if ([[bundle.class identifier] isEqualToString:MYIdentifier]) matches++;
+        if ([MYFaceBundleIdentifier(bundle) isEqualToString:MYIdentifier]) matches++;
     }];
     NTKFaceBundle *found = [MYManager faceBundleForBundleIdentifier:MYIdentifier onDevice:device forMigration:NO];
     BOOL valid = matches == 1 && found == MYBundle;
