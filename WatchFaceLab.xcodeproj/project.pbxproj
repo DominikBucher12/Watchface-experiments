@@ -10,23 +10,11 @@
 		010000000000000000000030 /* WatchFaceLabApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 010000000000000000000020 /* WatchFaceLabApp.swift */; };
 		010000000000000000000031 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 010000000000000000000021 /* ContentView.swift */; };
 		010000000000000000000032 /* Resources/pip-boy-reference.gif in Resources */ = {isa = PBXBuildFile; fileRef = 010000000000000000000026 /* Resources/pip-boy-reference.gif */; };
-		4E24FD483089933D00446D36 /* MYCustomFaceExperiment.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 4E24FD473089933D00446D36 /* MYCustomFaceExperiment.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		4E24FD4A308998BC00446D36 /* CustomFaceLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E24FD49308998B600446D36 /* CustomFaceLoader.swift */; };
 		4E7CD08F308AA3C400DFEB93 /* MYLocalFaceBundle.bundle in CopyFiles */ = {isa = PBXBuildFile; fileRef = 4E7CD08E308AA3C400DFEB93 /* MYLocalFaceBundle.bundle */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
 /* Begin PBXCopyFilesBuildPhase section */
-		4E24FD45308992B900446D36 /* Embed Frameworks */ = {
-			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 12;
-			dstPath = "";
-			dstSubfolderSpec = 10;
-			files = (
-				4E24FD483089933D00446D36 /* MYCustomFaceExperiment.framework in Embed Frameworks */,
-			);
-			name = "Embed Frameworks";
-			runOnlyForDeploymentPostprocessing = 0;
-		};
 		4E7CD08D308AA34300DFEB93 /* CopyFiles */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -122,9 +110,8 @@
 				010000000000000000000012 /* Sources */,
 				010000000000000000000013 /* Resources */,
 				4E24FD44308992B900446D36 /* Frameworks */,
-				4E24FD45308992B900446D36 /* Embed Frameworks */,
-				4E7CD090308AA3E700DFEB93 /* Run build-local-face-bundle */,
 				4E7CD08D308AA34300DFEB93 /* CopyFiles */,
+				4E7CD090308AA3E700DFEB93 /* Run build-local-face-bundle */,
 			);
 			buildRules = (
 			);
@@ -195,7 +182,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "# Type a script or drag a script file from your workspace to insert its path.\nbash \"$SRCROOT/Experiments/build-embedded-framework.sh\"\nbash \"$SRCROOT/Experiments/build-local-face-bundle.sh\"\n";
+			shellScript = "# Type a script or drag a script file from your workspace to insert its path.\n#bash \"$SRCROOT/Experiments/build-embedded-framework.sh\"\n#bash \"$SRCROOT/Experiments/build-local-face-bundle.sh\"\nbash \"$SRCROOT/Experiments/embed-watchos27-framework.sh\"\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 

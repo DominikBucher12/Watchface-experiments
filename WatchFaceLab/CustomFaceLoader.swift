@@ -23,6 +23,22 @@ enum CustomFaceLoader {
             .appendingPathComponent("MYCustomFaceExperiment.framework")
             .appendingPathComponent("MYCustomFaceExperiment")
 
+        
+        let libraries = [
+            "/System/Library/PrivateFrameworks/NanoTimeKit.framework/NanoTimeKit",
+            "/System/Library/PrivateFrameworks/ClockKitUI.framework/ClockKitUI"
+        ]
+
+        for path in libraries {
+            let handle = dlopen(path, RTLD_NOW | RTLD_GLOBAL)
+
+            if handle == nil {
+                print("Private framework load failed: \(path): \(String(cString: dlerror()))")
+            } else {
+                print("Private framework loaded: \(path)")
+            }
+        }
+        
         guard let handle = dlopen(frameworkURL.path, RTLD_NOW) else {
             print("Argon PoC: dlopen failed: \(String(cString: dlerror()))")
             return
