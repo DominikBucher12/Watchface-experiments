@@ -77,7 +77,8 @@ static void MYArgonDiscoveryV1(void) {
     NSLog(@"ARGON_DISCOVERY BEGIN");
     @try {
         NSString *expected = @"dev.develodom.WatchFaceLab.LocalFaceBundle";
-        NSURL *root = [NSBundle mainBundle].bundleURL;
+        NSURL *root = [[NSBundle mainBundle].bundleURL
+    URLByAppendingPathComponent:@"FaceBundles" isDirectory:YES];
         NSBundle *local = [NSBundle bundleWithURL:[root URLByAppendingPathComponent:@"MYLocalFaceBundle.bundle" isDirectory:YES]];
         if (![local.bundleIdentifier isEqualToString:expected]) {
             NSLog(@"ARGON_DISCOVERY SKIP local bundle missing at app root");

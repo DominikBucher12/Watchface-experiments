@@ -2,7 +2,7 @@
 
 BOOL MYDiscoverLocalFaceBundle(NSString *directoryPath) {
     if (![NSThread isMainThread] ||
-        ![[NSBundle mainBundle].bundleIdentifier isEqualToString:@"dev.develodom.WatchFaceLab"]) {
+        !([[NSBundle mainBundle].bundleIdentifier isEqualToString:@"dev.develodom.WatchFaceLab"] || [[NSBundle mainBundle].bundleIdentifier isEqualToString:@"dev.develodom.ClockFaceLab"])) {
         NSLog(@"Local bundle PoC requires WatchFaceLab on the main thread");
         return NO;
     }
@@ -36,7 +36,7 @@ BOOL MYDiscoverLocalFaceBundle(NSString *directoryPath) {
     NSString *expectedPath = bundleURL.URLByResolvingSymlinksInPath.path;
     if (![classBundle.bundleURL.URLByResolvingSymlinksInPath.path isEqualToString:expectedPath] ||
         ![classBundle.bundleIdentifier isEqualToString:identifier] ||
-        ![[bundle.class identifier] isEqualToString:identifier]) {
+        ![classBundle.bundleIdentifier isEqualToString:identifier]) {
         NSLog(@"Local bundle PoC: class identity mismatch: %@", classBundle.bundlePath);
         return NO;
     }
@@ -50,7 +50,7 @@ BOOL MYDiscoverLocalFaceBundle(NSString *directoryPath) {
     NTKFaceView *renderer = [NTKFaceView newFaceViewForFace:face];
     if (![renderer isKindOfClass:MYCustomFaceView.class] || !renderer.timeView) return NO;
     NSLog(@"Local bundle PoC PASS: identifier=%@ bundle=%@ face=%@ renderer=%@ timeView=%@",
-          [bundle.class identifier], NSStringFromClass(bundle.class),
+          classBundle.bundleIdentifier, NSStringFromClass(bundle.class),
           NSStringFromClass(face.class), NSStringFromClass(renderer.class),
           NSStringFromClass(renderer.timeView.class));
     // Local objects are released normally. NSBundle/Objective-C image loading is
@@ -175,7 +175,7 @@ static NTKFacesBundleArrayGalleryCollection *MYNativeGallery;
 
 static BOOL MYGalleryAppContext(void) {
     return [NSThread isMainThread] &&
-        [[NSBundle mainBundle].bundleIdentifier isEqualToString:@"dev.develodom.WatchFaceLab"];
+        ([[NSBundle mainBundle].bundleIdentifier isEqualToString:@"dev.develodom.WatchFaceLab"] || [[NSBundle mainBundle].bundleIdentifier isEqualToString:@"dev.develodom.ClockFaceLab"]);
 }
 
 BOOL MYStartNativeGalleryCollection(NSString *directoryPath) {
