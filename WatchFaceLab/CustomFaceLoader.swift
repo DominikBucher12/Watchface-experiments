@@ -57,12 +57,16 @@ enum CustomFaceLoader {
             to: DiscoveryFunction.self
         )
 
-        // Our bundle is copied into the application's Resources directory.
-        let directory = Bundle.main.bundleURL
-            .appendingPathComponent("MYLocalFaceBundle.bundle", isDirectory: true)
+        if let symbol = dlsym(handle, "MYProbeArgonReadOnlyXPC") {
+            typealias ProbeFunction = @convention(c) () -> Void
+            let probe = unsafeBitCast(symbol, to: ProbeFunction.self)
 
-        let result = discover(directory.deletingLastPathComponent().path as NSString)
-        print("Nevim co dela result ale tu mas: \(result)")
+            print("🤖ARGON_XPC: invoking read-only probe")
+            probe()
+        } else {
+            print("❌ARGON_XPC: symbol unavailable")
+        }
+        
     }
     
     static func present() {

@@ -1,118 +1,133 @@
 #import <Foundation/Foundation.h>
 #import <dlfcn.h>
 #import <objc/message.h>
+#import <objc/runtime.h>
 
-// Read-only probe for watchOS 27.0.1 (24R365).
-// Mirrors the verified NanoTimeKit XPC client contract without ingesting descriptors.
-// Exported interface factory: _NTKFaceSupportServerInterface (0x105608).
-// Client reference: _NTKAskFaceSupportServerForKnownKeyDescriptors (0x106cd0).
+// Read-only NanoTimeKit face-support probe for watchOS Simulator.
+// Never sends ingestKeyDescriptor: or any mutation request.
+@protocol MYArgonFaceSupportReadOnly
+- (void)knownKeyDescriptors:(void (^)(id descriptors))reply;
+@end
 
-static NSXPCConnection *MYArgonXPCConnection = nil;
-static NSUInteger MYArgonXPCSequence = 0;
+static NSXPCConnection *MYArgonConnection = nil;
+static NSUInteger MYArgonGeneration = 0;
+
+static void MYArgonFinish(NSXPCConnection *connection, NSUInteger generation,
+                          NSString *result) {
+    // All mutable probe state lives exclusively on the main queue.
+    dispatch_async(dispatch_get_main_queue(), ^{
+        if (generation != MYArgonGeneration || MYArgonConnection != connection) {
+            NSLog(@"ARGON_XPC LATE result=%@ generation=%lu", result,
+                  (unsigned long)generation);
+            return;
+        }
+        NSLog(@"ARGON_XPC END result=%@", result);
+        MYArgonConnection = nil;
+        [connection invalidate];
+    });
+}
 
 __attribute__((visibility("default"))) void MYProbeArgonReadOnlyXPC(void) {
-    NSLog(@"ARGON_XPC BEGIN service=com.apple.nanotimekit.facesupportserver");
-    if (MYArgonXPCConnection) {
-        NSLog(@"ARGON_XPC SKIP probe already active");
-        NSLog(@"ARGON_XPC END");
+    // Enforce serial client setup even if called off main thread.
+    if (![NSThread isMainThread]) {
+        dispatch_async(dispatch_get_main_queue(), ^{ MYProbeArgonReadOnlyXPC(); });
+        return;
+    }
+    NSLog(@"ARGON_XPC V4 BEGIN service=com.apple.nanotimekit.facesupportserver");
+    if (MYArgonConnection) {
+        NSLog(@"ARGON_XPC SKIP previous probe still active");
         return;
     }
 
     typedef NSXPCInterface *(*InterfaceFactory)(void);
-    InterfaceFactory factory = (InterfaceFactory)dlsym(RTLD_DEFAULT, "NTKFaceSupportServerInterface");
+    InterfaceFactory factory = (InterfaceFactory)dlsym(RTLD_DEFAULT,
+                                                       "NTKFaceSupportServerInterface");
     if (!factory) {
-        NSLog(@"ARGON_XPC SKIP exported interface factory unavailable");
-        NSLog(@"ARGON_XPC END");
+        NSLog(@"ARGON_XPC FAIL missing NTKFaceSupportServerInterface");
         return;
     }
     NSXPCInterface *interface = factory();
     if (!interface) {
-        NSLog(@"ARGON_XPC SKIP interface factory returned nil");
-        NSLog(@"ARGON_XPC END");
+        NSLog(@"ARGON_XPC FAIL interface=nil");
         return;
     }
-    NSLog(@"ARGON_XPC interface=%@", NSStringFromClass([interface class]));
 
-    // Matches the OS client reference on this specific watchOS build.
-    // watchOS SDK declares this initializer API_UNAVAILABLE, although the
-    // watchOS 27 NanoTimeKit binary calls it. Resolve it dynamically.
+    SEL selector = @selector(knownKeyDescriptors:);
+    Protocol *actualProtocol = interface.protocol;
+    struct objc_method_description desc = {NULL, NULL};
+    if (actualProtocol) {
+        desc = protocol_getMethodDescription(actualProtocol, selector, YES, YES);
+        if (!desc.name) {
+            desc = protocol_getMethodDescription(actualProtocol, selector, NO, YES);
+        }
+    }
+    NSLog(@"ARGON_XPC V3 protocol=%s selector=%s encoding=%s",
+          actualProtocol ? protocol_getName(actualProtocol) : "(nil)",
+          sel_getName(selector), desc.types ?: "(not exposed)");
+    if (!desc.name) {
+        NSLog(@"ARGON_XPC FAIL simulator interface does not declare knownKeyDescriptors:");
+        return;
+    }
+
     SEL machInit = sel_registerName("initWithMachServiceName:options:");
     if (![NSXPCConnection instancesRespondToSelector:machInit]) {
-        NSLog(@"ARGON_XPC SKIP Mach-service initializer absent at runtime");
-        NSLog(@"ARGON_XPC END result=unsupported-runtime");
+        NSLog(@"ARGON_XPC FAIL Mach service initializer unavailable");
         return;
     }
-    NSXPCConnection *connection = ((id (*)(id, SEL, NSString *, NSUInteger))objc_msgSend)(
-        [NSXPCConnection alloc],
-        machInit,
-        @"com.apple.nanotimekit.facesupportserver",
-        (NSUInteger)0x1000);
-    if (!connection) {
-        NSLog(@"ARGON_XPC FAIL connection initialization returned nil");
-        NSLog(@"ARGON_XPC END");
-        return;
-    }
-    MYArgonXPCConnection = connection;
-    NSUInteger sequence = ++MYArgonXPCSequence;
-    __block BOOL completed = NO;
 
+    const NSUInteger options = 0x1000; // Match Apple's known privileged client path.
+    NSXPCConnection *connection = ((id (*)(id, SEL, NSString *, NSUInteger))objc_msgSend)(
+        [NSXPCConnection alloc], machInit,
+        @"com.apple.nanotimekit.facesupportserver", options);
+    if (!connection) {
+        NSLog(@"ARGON_XPC FAIL connection=nil");
+        return;
+    }
+
+    NSUInteger generation = ++MYArgonGeneration;
+    MYArgonConnection = connection;
     connection.remoteObjectInterface = interface;
     connection.interruptionHandler = ^{
-        NSLog(@"ARGON_XPC INTERRUPTED");
+        NSLog(@"ARGON_XPC V3 INTERRUPTED generation=%lu", (unsigned long)generation);
+        MYArgonFinish(connection, generation, @"interrupted");
     };
     connection.invalidationHandler = ^{
-        NSLog(@"ARGON_XPC INVALIDATED");
+        NSLog(@"ARGON_XPC V3 INVALIDATED generation=%lu", (unsigned long)generation);
     };
     [connection resume];
-    NSLog(@"ARGON_XPC request=knownKeyDescriptors (read-only)");
 
-    id proxy = [connection remoteObjectProxyWithErrorHandler:^(NSError *error) {
-        if (completed) return;
-        completed = YES;
-        NSLog(@"ARGON_XPC ERROR domain=%@ code=%ld description=%@",
-              error.domain, (long)error.code, error.localizedDescription);
-        NSLog(@"ARGON_XPC END result=error");
-        [connection invalidate];
-        if (MYArgonXPCConnection == connection) MYArgonXPCConnection = nil;
-    }];
-
-    SEL selector = sel_registerName("knownKeyDescriptors:");
-    if (!proxy || ![proxy respondsToSelector:selector]) {
-        // NSXPCProxy may not advertise remote selectors using respondsToSelector.
-        NSLog(@"ARGON_XPC NOTE proxy respondsToSelector=%d (remote selectors can be dynamic)",
-              (int)[proxy respondsToSelector:selector]);
-    }
+    id<MYArgonFaceSupportReadOnly> proxy =
+        (id<MYArgonFaceSupportReadOnly>)[connection remoteObjectProxyWithErrorHandler:^(NSError *error) {
+            NSLog(@"ARGON_XPC V3 ERROR domain=%@ code=%ld description=%@",
+                  error.domain, (long)error.code, error.localizedDescription);
+            MYArgonFinish(connection, generation, @"error");
+        }];
     if (!proxy) {
-        NSLog(@"ARGON_XPC FAIL proxy unavailable");
-        NSLog(@"ARGON_XPC END result=no-proxy");
-        [connection invalidate];
-        MYArgonXPCConnection = nil;
+        MYArgonFinish(connection, generation, @"no-proxy");
         return;
     }
-    void (^reply)(id) = ^(id descriptors) {
-        if (completed) return;
-        completed = YES;
-        NSString *type = descriptors ? NSStringFromClass([descriptors class]) : @"nil";
-        if (descriptors && [descriptors respondsToSelector:@selector(count)]) {
-            NSUInteger count = ((NSUInteger (*)(id, SEL))objc_msgSend)(descriptors, @selector(count));
-            NSLog(@"ARGON_XPC REPLY type=%@ count=%lu", type, (unsigned long)count);
-        } else {
-            NSLog(@"ARGON_XPC REPLY type=%@ count=unknown", type);
-        }
-        NSLog(@"ARGON_XPC END result=reply");
-        [connection invalidate];
-        if (MYArgonXPCConnection == connection) MYArgonXPCConnection = nil;
-    };
-    ((void (*)(id, SEL, id))objc_msgSend)(proxy, selector, reply);
 
-    // Timeout prevents an XPC rejection from looking like an indefinitely running probe.
+    NSLog(@"ARGON_XPC V3 SEND options=0x%lx remotePID=%d thread=%@",
+          (unsigned long)options, connection.processIdentifier,
+          [NSThread isMainThread] ? @"main" : @"background");
+    // Objective-C protocol dispatch instead of casting objc_msgSend to an ad-hoc ABI.
+    [proxy knownKeyDescriptors:^(id descriptors) {
+        NSString *kind = descriptors ? NSStringFromClass([descriptors class]) : @"nil";
+        NSString *count = @"unknown";
+        if ([descriptors respondsToSelector:@selector(count)]) {
+            count = [NSString stringWithFormat:@"%lu",
+                     (unsigned long)((NSUInteger (*)(id, SEL))objc_msgSend)(
+                         descriptors, @selector(count))];
+        }
+        NSLog(@"ARGON_XPC V3 REPLY type=%@ count=%@", kind, count);
+        MYArgonFinish(connection, generation, @"reply");
+    }];
+    NSLog(@"ARGON_XPC V3 SENT async (not an acknowledgement)");
+
     dispatch_after(dispatch_time(DISPATCH_TIME_NOW, (int64_t)(12 * NSEC_PER_SEC)),
                    dispatch_get_main_queue(), ^{
-        if (sequence != MYArgonXPCSequence || completed) return;
-        completed = YES;
-        NSLog(@"ARGON_XPC TIMEOUT no reply/error after 12s (inconclusive)");
-        NSLog(@"ARGON_XPC END result=timeout");
-        [connection invalidate];
-        if (MYArgonXPCConnection == connection) MYArgonXPCConnection = nil;
+        if (generation != MYArgonGeneration || MYArgonConnection != connection) return;
+        NSLog(@"ARGON_XPC V4 TIMEOUT 12s remotePID=%d; connection remains OPEN", connection.processIdentifier);
+        NSLog(@"ARGON_XPC V4 WAITING for late reply/error/interruption; no local invalidation");
     });
 }
