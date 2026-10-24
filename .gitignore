@@ -1,0 +1,7 @@
+# macOS metadata
+.DS_Store
+
+# Personal Xcode settings, UI state, and breakpoints
+xcuserdata/
+*.xcuserstate
+*.xcbkptlist
