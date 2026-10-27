@@ -184,7 +184,7 @@ case "$action" in
         xcrun simctl spawn "$simulator_udid" log show \
             --last 5m --info --debug --style compact \
             --predicate 'eventMessage CONTAINS "WATCHFACELAB_ROOT_BOOTSTRAP" OR eventMessage CONTAINS "WATCHFACELAB_SYSTEM_BUNDLE_LOADED" OR eventMessage CONTAINS "MYLocalFaceBundle"' |
-            tail -40
+            tail -40 || true
         ;;
 
     install|remove)

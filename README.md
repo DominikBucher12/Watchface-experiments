@@ -2,6 +2,21 @@
 
 Minimal, clean-room **watchOS 26.5** research starter for an **Intel / x86_64** simulator. No dependencies, CocoaPods, Carthage, or XcodeGen.
 
+## Fast animated system-face demo
+
+The end-to-end simulator path is now confirmed. On a disposable simulator named
+`WatchFaceLab26 Research`, run:
+
+```sh
+bash Experiments/quickstart-system-face.sh
+```
+
+It builds, loads, installs, selects, and displays the animated Pip-Boy face in
+the original system ClockFace. Run it as your normal user, never with `sudo`.
+See [Docs/QUICKSTART.md](Docs/QUICKSTART.md) for the short guide and
+[Docs/SIMULATOR-SYSTEM-LOAD.md](Docs/SIMULATOR-SYSTEM-LOAD.md) for the evidence
+and trust-boundary analysis.
+
 ## What you get
 
 - `WatchFaceLab.xcodeproj` — single-target SwiftUI watch-only app built with the public SDK.
@@ -34,7 +49,10 @@ Build for a selected simulator destination in Xcode after confirming the simulat
 
 ## Important status
 
-This is a **stage-0 runnable baseline plus stage-1 source prototype**, not a working installed `NTKFace`. Project generation and compilation were not tested against Xcode 26.5 in this environment. The next milestone is to verify a clean build on your Mac.
+The public SwiftUI target remains the clean baseline. Separately, the guarded
+research scripts now demonstrate a working installed `NTKFace` in the original
+watchOS 26.5 Simulator ClockFace. This is simulator-only and is not evidence of
+an equivalent installation path on physical Apple Watch hardware.
 
 ## Continue with ChatGPT / Codex
 
@@ -43,7 +61,7 @@ Commit the entire directory to your own repository. The source code and `Docs/RE
 ## Isolated simulator experiment
 
 `bash Experiments/build-simulator.sh` builds the separate x86_64 watchOS 26.5
-simulator dylib under `/tmp/WatchFaceLab26-NTK`. It uses the installed runtime
-without copying Apple frameworks. See `Docs/RESEARCH.md` for evidence, the explicit
-entry point, UIKit compilation workaround, and remaining runtime gates.
-The module has been built; allocation and visual presentation have not been run.
+simulator artifacts under `/tmp/WatchFaceLab26-NTK`. It uses the installed
+runtime without copying Apple frameworks. Allocation, persistent installation,
+active selection, GIF decoding, and visual presentation have all been verified
+on the disposable research simulator.
