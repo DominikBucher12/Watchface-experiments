@@ -60,3 +60,47 @@ xcrun --sdk watchsimulator clang \
   -o "$output_dir/MYOwnedDiscovery.dylib"
 codesign --force --sign - "$output_dir/MYOwnedDiscovery.dylib"
 printf '%s\n' "$output_dir/MYOwnedDiscovery.dylib"
+
+# Fresh-process probe for the default NTKFaceBundleManager discovery path.
+xcrun --sdk watchsimulator clang \
+  -target x86_64-apple-watchos26.5-simulator -isysroot "$sdk_path" \
+  -fobjc-arc -fblocks -fno-modules -Wall -Wextra -Werror \
+  "$experiment_dir/SystemDiscoveryProbe.m" "$ntk_binary" \
+  -F"$runtime_root/System/Library/PrivateFrameworks" \
+  -framework Foundation -framework UIKit -framework ClockKit \
+  -o "$output_dir/SystemDiscoveryProbe"
+codesign --force --sign - "$output_dir/SystemDiscoveryProbe"
+printf '%s\n' "$output_dir/SystemDiscoveryProbe"
+
+# Read-only authorization probe for com.apple.nanotimekit.collectionserver.
+xcrun --sdk watchsimulator clang \
+  -target x86_64-apple-watchos26.5-simulator -isysroot "$sdk_path" \
+  -fobjc-arc -fblocks -fno-modules -Wall -Wextra -Werror \
+  "$experiment_dir/CollectionReadProbe.m" "$ntk_binary" \
+  -F"$runtime_root/System/Library/PrivateFrameworks" \
+  -framework Foundation -framework ClockKit \
+  -o "$output_dir/CollectionReadProbe"
+codesign --force --sign - "$output_dir/CollectionReadProbe"
+printf '%s\n' "$output_dir/CollectionReadProbe"
+
+# Opt-in persistent add/remove/select client. Building it performs no mutation.
+xcrun --sdk watchsimulator clang \
+  -target x86_64-apple-watchos26.5-simulator -isysroot "$sdk_path" \
+  -fobjc-arc -fblocks -fno-modules -Wall -Wextra -Werror \
+  "$experiment_dir/CollectionMutationProbe.m" "$ntk_binary" \
+  -F"$runtime_root/System/Library/PrivateFrameworks" \
+  -framework Foundation -framework UIKit -framework ClockKit \
+  -o "$output_dir/CollectionMutationProbe"
+codesign --force --sign - "$output_dir/CollectionMutationProbe"
+printf '%s\n' "$output_dir/CollectionMutationProbe"
+
+# Early-process root switch for original ClockFace and nanotimekitd only.
+xcrun --sdk watchsimulator clang \
+  -target x86_64-apple-watchos26.5-simulator -isysroot "$sdk_path" \
+  -fobjc-arc -fno-modules -Wall -Wextra -Werror -dynamiclib \
+  "$experiment_dir/SystemRootBootstrap.m" \
+  -framework Foundation \
+  -install_name @rpath/SystemRootBootstrap.dylib \
+  -o "$output_dir/SystemRootBootstrap.dylib"
+codesign --force --sign - "$output_dir/SystemRootBootstrap.dylib"
+printf '%s\n' "$output_dir/SystemRootBootstrap.dylib"
