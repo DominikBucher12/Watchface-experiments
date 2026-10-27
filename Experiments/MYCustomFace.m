@@ -25,12 +25,33 @@ static UIView *MYPipRule(void) {
     return rule;
 }
 
+static NSURL *MYPipBoyAnimationURL(void) {
+    Class bundleClass = NSClassFromString(@"MYLocalFaceBundle");
+    NSBundle *faceBundle = bundleClass ? [NSBundle bundleForClass:bundleClass] : nil;
+    if (!faceBundle) {
+        faceBundle = [NSBundle bundleWithIdentifier:
+            @"dev.develodom.WatchFaceLab.LocalFaceBundle"];
+    }
+    NSURL *url = [faceBundle URLForResource:@"pip-boy-reference"
+                              withExtension:@"gif"
+                               subdirectory:@"Assets"];
+    if (!url && faceBundle.bundleURL) {
+        url = [faceBundle.bundleURL URLByAppendingPathComponent:
+            @"Assets/pip-boy-reference.gif"];
+        if (![url checkResourceIsReachableAndReturnError:nil]) url = nil;
+    }
+    return url;
+}
+
 static UIImage *MYAnimatedVaultBoySprite(void) {
-    NSString *path = @"/tmp/WatchFaceLab26-NTK/pip-boy-reference.gif";
-    NSURL *url = [NSURL fileURLWithPath:path];
+    NSURL *url = MYPipBoyAnimationURL();
+    if (!url) {
+        NSLog(@"Pip-Boy preview: bundled animation resource is unavailable");
+        return nil;
+    }
     CGImageSourceRef source = CGImageSourceCreateWithURL((__bridge CFURLRef)url, NULL);
     if (!source) {
-        NSLog(@"Pip-Boy preview: couldn't open animation at %@", path);
+        NSLog(@"Pip-Boy preview: couldn't open animation at %@", url.path);
         return nil;
     }
 
@@ -65,6 +86,8 @@ static UIImage *MYAnimatedVaultBoySprite(void) {
         duration += (delay && delay.doubleValue > 0.0) ? delay.doubleValue : 0.1;
     }
     CFRelease(source);
+    NSLog(@"Pip-Boy preview: loaded %lu frames from %@ (%.3fs)",
+          (unsigned long)frames.count, url.path, duration);
     if (frames.count < 2 || duration <= 0.0) return frames.firstObject;
     return [UIImage animatedImageWithImages:frames duration:duration];
 }

@@ -22,8 +22,15 @@ codesign --force --sign - "$output_dir/MYCustomFaceExperiment.dylib"
 printf '%s\n' "$output_dir/MYCustomFaceExperiment.dylib"
 
 bundle_dir="$output_dir/FaceBundles/MYLocalFaceBundle.bundle"
+if [[ -d "$bundle_dir" ]]; then
+  rm -rf "$bundle_dir"
+fi
 mkdir -p "$bundle_dir"
 cp "$experiment_dir/LocalFaceBundle/Info.plist" "$bundle_dir/Info.plist"
+animation_source="$experiment_dir/../WatchFaceLab/Resources/pip-boy-reference.gif"
+test -f "$animation_source"
+mkdir -p "$bundle_dir/Assets"
+cp "$animation_source" "$bundle_dir/Assets/pip-boy-reference.gif"
 xcrun --sdk watchsimulator clang \
   -target x86_64-apple-watchos26.5-simulator -isysroot "$sdk_path" \
   -fobjc-arc -fno-modules -Wall -Wextra -Werror -g -bundle \
@@ -34,6 +41,9 @@ xcrun --sdk watchsimulator clang \
   -Wl,-rpath,@loader_path/../.. \
   -o "$bundle_dir/MYLocalFaceBundle"
 codesign --force --sign - "$bundle_dir"
+codesign --verify --deep --strict "$bundle_dir"
+codesign -d --verbose=4 "$bundle_dir" 2>&1 |
+  grep 'Info.plist entries=' >/dev/null
 printf '%s\n' "$bundle_dir"
 
 # Separate opt-in system-host bridge; never loaded or executed by this script.
@@ -104,3 +114,14 @@ xcrun --sdk watchsimulator clang \
   -o "$output_dir/SystemRootBootstrap.dylib"
 codesign --force --sign - "$output_dir/SystemRootBootstrap.dylib"
 printf '%s\n' "$output_dir/SystemRootBootstrap.dylib"
+
+# One-shot, ABI-guarded active-face switch for the original ClockFace UI.
+xcrun --sdk watchsimulator clang \
+  -target x86_64-apple-watchos26.5-simulator -isysroot "$sdk_path" \
+  -fobjc-arc -fblocks -fno-modules -Wall -Wextra -Werror -dynamiclib \
+  "$experiment_dir/ActiveFaceSelector.m" \
+  -framework Foundation -framework UIKit \
+  -install_name @rpath/ActiveFaceSelector.dylib \
+  -o "$output_dir/ActiveFaceSelector.dylib"
+codesign --force --sign - "$output_dir/ActiveFaceSelector.dylib"
+printf '%s\n' "$output_dir/ActiveFaceSelector.dylib"

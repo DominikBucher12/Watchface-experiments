@@ -11,6 +11,7 @@ usage() {
         "usage: $0 prepare <research-simulator-udid>" \
         "       $0 activate <research-simulator-udid> <overlay-root>" \
         "       $0 install <research-simulator-udid>" \
+        "       $0 show <research-simulator-udid> [face-index]" \
         "       $0 remove <research-simulator-udid>" \
         "       $0 status <research-simulator-udid>" \
         "       $0 rollback <research-simulator-udid>"
@@ -203,6 +204,44 @@ case "$action" in
             "IPHONE_SIMULATOR_ROOT=$overlay_root" \
             WATCHFACELAB_SYSTEM_DISCOVERY_PROBE=1 \
             "$mutation_probe" "$action"
+        ;;
+
+    show)
+        face_index="${3:-1}"
+        if [[ ! "$face_index" =~ ^[0-9]+$ || "$face_index" -gt 31 ]]; then
+            printf 'ERROR: invalid face index: %s\n' "$face_index" >&2
+            exit 74
+        fi
+        overlay_root="$(xcrun simctl spawn "$simulator_udid" launchctl getenv WATCHFACELAB_OVERLAY_ROOT || true)"
+        bootstrap="/tmp/WatchFaceLab26-SystemDiscoveryBuild/SystemRootBootstrap.dylib"
+        selector="/tmp/WatchFaceLab26-SystemDiscoveryBuild/ActiveFaceSelector.dylib"
+        if [[ -z "$overlay_root" || ! -f "$bootstrap" || ! -f "$selector" ]]; then
+            printf 'ERROR: active overlay or selector build is missing\n' >&2
+            exit 75
+        fi
+        cleanup_show() {
+            xcrun simctl spawn "$simulator_udid" launchctl unsetenv \
+                DYLD_INSERT_LIBRARIES || true
+            xcrun simctl spawn "$simulator_udid" launchctl unsetenv \
+                WATCHFACELAB_SELECT_FACE_INDEX || true
+        }
+        trap cleanup_show EXIT
+        xcrun simctl spawn "$simulator_udid" launchctl setenv \
+            WATCHFACELAB_SELECT_FACE_INDEX "$face_index"
+        xcrun simctl spawn "$simulator_udid" launchctl setenv \
+            DYLD_INSERT_LIBRARIES "$bootstrap:$selector"
+        xcrun simctl terminate "$simulator_udid" com.apple.clockface
+        sleep 8
+        cleanup_show
+        trap - EXIT
+        show_logs="$(xcrun simctl spawn "$simulator_udid" log show \
+            --last 1m --info --debug --style compact \
+            --predicate 'eventMessage CONTAINS "WATCHFACELAB_ACTIVE_FACE_"')"
+        printf '%s\n' "$show_logs"
+        if ! grep -Fq "WATCHFACELAB_ACTIVE_FACE_SELECTED" <<<"$show_logs"; then
+            printf 'ERROR: active face selection was not confirmed\n' >&2
+            exit 76
+        fi
         ;;
 
     rollback)
