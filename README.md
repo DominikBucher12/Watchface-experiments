@@ -4,6 +4,23 @@
 >
 > **Scope:** This document describes `Experiments/` on the `version/27` branch. Findings marked **Verified** are based on the device, tool output, or the watchOS 27.0.1 NanoTimeKit binary; **Hypothesis / Open** means not experimentally established.
 
+## Simulator system-loader port
+
+This branch now also contains a runtime-driven port of the working Simulator
+system-loader experiment:
+
+```sh
+bash Experiments/quickstart-system-face.sh WATCHOS-27-RESEARCH-SIMULATOR-UUID
+```
+
+It derives architecture and deployment target from the selected runtime, builds
+a guarded hybrid-root loader, installs the face through the collection service,
+and switches the live ClockFace UI. The complete port was verified on a clean
+watchOS 26.5 x86_64 simulator, including the animated 32-frame Pip-Boy renderer.
+This Mac currently has no watchOS 27 Simulator runtime, so the final 27.x runtime
+execution remains pending. See
+[Docs/watchos27/SIMULATOR_SYSTEM_LOAD.md](Docs/watchos27/SIMULATOR_SYSTEM_LOAD.md).
+
 ## Objective and current blocker
 
 The goal is a Pip-Boy-inspired **native, persistent** watch face hosted by the system, not a third-party application that happens to draw a clock while it is foregrounded.
@@ -128,6 +145,8 @@ The watchOS 27 device and watchOS simulator frameworks are **not interchangeable
 - [x] Custom watch-face renderer working inside WatchFaceLab (app lifecycle only)
 - [x] App-local bundle loader and manager bridge implemented
 - [x] Argon internal unencrypted-bundle path identified statically
+- [x] Runtime-driven Simulator system-loader port implemented and validated on a clean 26.5 simulator
+- [ ] Re-run guarded end-to-end flow on an installed watchOS 27 Simulator runtime
 - [ ] Confirm loaded-image UUID and host behavior at runtime
 - [ ] Establish Argon executable-versus-resource payload type
 - [ ] Demonstrate trusted, durable system `ClockFace` registration
