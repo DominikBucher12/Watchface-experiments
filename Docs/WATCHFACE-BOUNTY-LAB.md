@@ -104,7 +104,8 @@ bash Experiments/watchface-parser-lab.sh run "$CORPUS" 000-baseline \
 The runner:
 
 1. verifies the selected case hash;
-2. builds and signs the public complication host with that case embedded;
+2. performs a clean build and signs the public complication host with that
+   case embedded, avoiding stale incremental resource seals;
 3. verifies the embedded hash and app signature;
 4. installs the app and launches it exactly once;
 5. calls public `CLKWatchFaceLibrary.addWatchFace` from the visible app;

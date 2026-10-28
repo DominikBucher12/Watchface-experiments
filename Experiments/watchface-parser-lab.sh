@@ -279,8 +279,9 @@ case "$command_name" in
             -destination-timeout 120 \
             -derivedDataPath "$derived_data" \
             -allowProvisioningUpdates \
+            -quiet \
             "WATCHFACELAB_SEED_FACE=$case_path" \
-            build 2>&1 | tee "$run_dir/build.log"
+            clean build 2>&1 | tee "$run_dir/build.log"
 
         app_path="$derived_data/Build/Products/Debug-watchos/WatchFaceLab.app"
         embedded_face="$app_path/PipBoy.watchface"
@@ -290,6 +291,7 @@ case "$command_name" in
         [[ "$embedded_hash" == "$case_hash" ]] || fail \
             "embedded case hash mismatch: expected $case_hash, got $embedded_hash"
         codesign --verify --deep --strict "$app_path"
+        printf 'PARSER_BUILD=PASS embeddedSHA256=%s\n' "$embedded_hash"
 
         printf 'PARSER_STEP=2/4 install signed test host on owned Watch %s\n' "$device_id"
         install_status=1
