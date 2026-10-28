@@ -5,7 +5,7 @@ external artifacts have now been removed from the `version/simulator27` working
 tree. The obsolete LFS-only `.gitattributes` file was removed after the tree no
 longer contained LFS pointers. `main` and `version/27` now have the same artifact
 policy and branch-appropriate cleanup commits. The approved all-ref history
-rewrite and coordinated force-push are the remaining steps.
+rewrite and coordinated force-push completed successfully on 2026-10-28.
 
 ## Verified backups
 
@@ -81,14 +81,16 @@ cleanup.
 - `WatchFaceLab/Resources/pip-boy-reference.gif`;
 - build and bootstrap scripts.
 
-## History rewrite boundary
+## Completed history rewrite
 
-Deleting files in a new commit does not shrink existing clones. After the
-working trees are cleaned and tested, all branches and tags must be rewritten
-in a fresh mirror clone with `git-filter-repo`. The rewritten refs must be
-force-pushed in a coordinated maintenance window. Existing clones must be
-retired and freshly cloned so that an old ref cannot restore the removed
-objects.
+All three branches were rewritten in a fresh mirror with `git-filter-repo`,
+tested in a separate checkout, and force-pushed. The bare mirror shrank from
+937.53 MiB to 483.23 KiB. Rewrite base heads were `main` `6ec871d`, `version/27`
+`4a578be`, and `version/simulator27` `1ef52ff`.
+
+Existing pre-cleanup clones must be retired and freshly cloned; never merge or
+push their old branch history. The sibling backup and bundle above deliberately
+retain the old refs for offline recovery only.
 
 GitHub LFS objects remain in remote LFS storage after their pointers are removed.
 Purging that quota requires recreating the GitHub repository or arranging a
