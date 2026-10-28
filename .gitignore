@@ -70,6 +70,10 @@ __pycache__/
 /Experiments/WatchFaceParser/Corpus/
 /Experiments/WatchFaceParser/Runs/
 
+# Generated cross-component CVE probe corpus and physical-device evidence
+/Experiments/CVEProbes/Corpus/
+/Experiments/CVEProbes/Runs/
+
 # Historical root-level scratch dumps
 /another.txt
 /dalsi.txt

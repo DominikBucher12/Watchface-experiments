@@ -14,6 +14,7 @@
 		020000000000000000000031 /* PipBoyComplication.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 020000000000000000000005 /* PipBoyComplication.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		4E24FD483089933D00446D36 /* MYCustomFaceExperiment.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 4E24FD473089933D00446D36 /* MYCustomFaceExperiment.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		4E24FD4A308998BC00446D36 /* CustomFaceLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E24FD49308998B600446D36 /* CustomFaceLoader.swift */; };
+		5A0000020000000000000030 /* ResearchProbeRunner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A0000020000000000000020 /* ResearchProbeRunner.swift */; };
 		4E7CD08F308AA3C400DFEB93 /* MYLocalFaceBundle.bundle in CopyFiles */ = {isa = PBXBuildFile; fileRef = 4E7CD08E308AA3C400DFEB93 /* MYLocalFaceBundle.bundle */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
@@ -76,6 +77,7 @@
 		020000000000000000000021 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		4E24FD473089933D00446D36 /* MYCustomFaceExperiment.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MYCustomFaceExperiment.framework; path = Experiments/Build/Device/MYCustomFaceExperiment.framework; sourceTree = "<group>"; };
 		4E24FD49308998B600446D36 /* CustomFaceLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomFaceLoader.swift; sourceTree = "<group>"; };
+		5A0000020000000000000020 /* ResearchProbeRunner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ResearchProbeRunner.swift; sourceTree = "<group>"; };
 		4E7CD08E308AA3C400DFEB93 /* MYLocalFaceBundle.bundle */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.plug-in"; name = MYLocalFaceBundle.bundle; path = Experiments/Build/Device/FaceBundles/MYLocalFaceBundle.bundle; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -125,6 +127,7 @@
 				010000000000000000000020 /* WatchFaceLabApp.swift */,
 				010000000000000000000021 /* ContentView.swift */,
 				4E24FD49308998B600446D36 /* CustomFaceLoader.swift */,
+				5A0000020000000000000020 /* ResearchProbeRunner.swift */,
 				010000000000000000000026 /* Resources/pip-boy-reference.gif */,
 			);
 			path = WatchFaceLab;
@@ -300,6 +303,7 @@
 			files = (
 				010000000000000000000030 /* WatchFaceLabApp.swift in Sources */,
 				010000000000000000000031 /* ContentView.swift in Sources */,
+				5A0000020000000000000030 /* ResearchProbeRunner.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

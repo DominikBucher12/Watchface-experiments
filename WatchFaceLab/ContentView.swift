@@ -163,6 +163,9 @@ struct ContentView: View {
         }
         .background(.black)
         .task {
+            if await ResearchProbeRunner.runIfRequested() {
+                return
+            }
             importer.runAutomatedImportIfRequested()
         }
     }

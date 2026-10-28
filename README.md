@@ -1,5 +1,10 @@
 # Watchface Experiments — watchOS 27 (device / arm64)
 
+> **Series 9 CVE batch:** `bash Experiments/cve-probe-lab.sh prepare` creates
+> bounded ImageIO, font, audio, and video cases; one guarded `batch` command
+> builds once and runs all available cases. See
+> [Docs/S9-CVE-PROBE-LAB.md](Docs/S9-CVE-PROBE-LAB.md).
+
 > **`research/watchface-parser` branch:** Bounded, owner-device robustness
 > testing for a system-exported `.watchface`. Start with
 > `bash Experiments/watchface-parser-lab.sh generate OWNED.watchface`, run the

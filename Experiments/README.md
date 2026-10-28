@@ -12,6 +12,26 @@ relaunches after a possible crash. Generated corpora and run evidence are
 ignored by Git. Follow
 [`Docs/WATCHFACE-BOUNTY-LAB.md`](../Docs/WATCHFACE-BOUNTY-LAB.md).
 
+## Series 9 CVE surface batch
+
+`cve-probe-lab.sh` builds and installs the signed Watch app once, then runs up
+to 16 deterministic, hash-locked cases across ImageIO, CoreText/FontParser,
+CoreAudio, and the public AVFoundation/AppleAVD path. Each input gets a fresh
+app process; a timeout or invalid result stops the batch without retrying it.
+Generated corpus and evidence directories are ignored by Git.
+
+```sh
+bash Experiments/cve-probe-lab.sh prepare
+# Use the CORPUS path printed above:
+bash Experiments/cve-probe-lab.sh batch "$CORPUS" --plan
+bash Experiments/cve-probe-lab.sh batch "$CORPUS" --owned-device
+```
+
+The public watchOS SDK has no VideoToolbox encoder API, so this does not claim
+to reproduce an `AVEVideoEncoder` CVE. See
+[`Docs/S9-CVE-PROBE-LAB.md`](../Docs/S9-CVE-PROBE-LAB.md) for the component/CVE
+map, safety limits, subsets, evidence handling, and exact commands.
+
 ## Generated files are not checked in
 
 This directory contains experiment sources and scripts. `Build/`, copied Apple
