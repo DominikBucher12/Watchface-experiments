@@ -48,10 +48,13 @@ The physical system collection experiment is explicit and staged. Start with:
 bash Experiments/watchos27-device-face.sh preflight
 ```
 
-This stable convenience script also accepts `result`, `install`, `select`, and
-`rollback`; it automatically selects the first available physical Watch unless
-`--device ID` is supplied. `result` only downloads the last JSON and does not
-build, install, launch, or mutate anything.
+This stable convenience script also accepts `audit`, `result`, `install`,
+`select`, and `rollback`; it automatically selects the first available physical
+Watch for device actions unless `--device ID` is supplied. `result` only
+downloads the last JSON. `audit` does not contact the Watch: it inspects the
+matching DeviceSupport copy of the real `ClockFace`, `nanotimekitd`,
+NanoTimeKit, FaceSupport components, signatures, entitlements, linked images,
+and boundary-related strings. Neither command mutates the device.
 
 Then follow [`Docs/watchos27/DEVICE_SYSTEM_FACE_PROBE.md`](../Docs/watchos27/DEVICE_SYSTEM_FACE_PROBE.md).
 The bootstrap copies the result from the app data container and prints the

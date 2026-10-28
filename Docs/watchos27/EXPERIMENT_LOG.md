@@ -33,6 +33,8 @@ The log records **observed results** in chronological order. Exact times are app
 | 27 | First recovered physical preflight result | All eight collection selector encodings match the expected ABI; `sharedLibraryCollection` remained `hasLoaded=false` for 12 seconds | Do not mutate. Expanded preflight to report connection/registration/reference/device state and perform one read-only `_registerIfNeeded` retry only when the collection requests it. |
 | 28 | Expanded physical preflight result | `NSXPCConnection` exists; registration flag stays false; sequence ID and reference collection stay nil; current `CLKDevice` exists; no state changed from initial through timeout | Registration was issued but produced no callback or interruption. Added a duplicate read-only registration with a dedicated XPC error handler to test the service-authorization boundary. |
 | 29 | First XPC-error preflight attempt | Launch reported success, but the result file retained the preceding run ID and timestamp | `--terminate-existing` did not guarantee a fresh watchOS process. The workflow now enumerates and force-terminates only WatchFaceLab by PID before passing a new action environment. |
+| 30 | Fresh XPC-registration preflight | Fresh run ID; all eight selector ABIs matched; `NSXPCConnection` and its proxy were present; registration was enqueued; no error callback arrived; `LibraryFaces` stayed unloaded with nil sequence/reference state until timeout | Stop repeating app preflights and do not mutate. The unresolved boundary is now system service identity, authorization, sandbox policy, or server-side filtering rather than selector ABI or message construction. |
+| 31 | Static system-boundary audit implementation | Added a host-only `audit` command for exact `ClockFace.app/ClockFace`, `nanotimekitd`, NanoTimeKit, FaceSupport components, signatures, entitlements, dependencies, and service-related strings | Results from the matching watchOS 27 DeviceSupport tree are pending; missing components are reported explicitly and are not confused with negative findings. |
 
 ## Known useful console excerpts
 
@@ -74,4 +76,8 @@ cs_flags (0x26003301): valid hard kill enforcement require_lv dyld_platform plat
 
 ## Pending work
 
-Real `ClockFace` Mach-O audit; verify its manager/gallery integration and signing/entitlements; FaceSupportServer authorization; evaluate whether any supported third-party executable face registration exists. Native persistent Pip-Boy system watchface has **not** been demonstrated.
+Run the static system-boundary audit against matching DeviceSupport; verify the
+real `ClockFace` manager/gallery integration and signing/entitlements;
+FaceSupportServer authorization; evaluate whether any supported third-party
+executable face registration exists. Native persistent Pip-Boy system watchface
+has **not** been demonstrated.

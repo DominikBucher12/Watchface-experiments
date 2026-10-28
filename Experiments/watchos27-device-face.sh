@@ -9,6 +9,9 @@ command="${1:-preflight}"
 if [[ $# -gt 0 ]]; then shift; fi
 
 case "$command" in
+    audit)
+        exec bash "$experiments_dir/audit-watchos27-system-boundary.sh" "$@"
+        ;;
     result)
         exec bash "$experiments_dir/bootstrap-watchos27-device.sh" \
             --result-only "$@"
@@ -19,8 +22,10 @@ case "$command" in
         ;;
     help|--help|-h)
         printf '%s\n' \
-            "usage: $0 [result|preflight|install|select|rollback] [--device ID]" \
+            "usage: $0 audit" \
+            "       $0 [result|preflight|install|select|rollback] [--device ID]" \
             "" \
+            "audit      inspect the static system trust boundary in DeviceSupport" \
             "result     fetch the last JSON without rebuilding or relaunching" \
             "preflight  read-only system collection probe (default)" \
             "install    add the candidate without selecting it" \

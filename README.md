@@ -59,6 +59,19 @@ preflight:
 bash Experiments/watchos27-device-face.sh preflight
 ```
 
+The physical run reached the XPC proxy but timed out before `LibraryFaces`
+loaded. Do not repeat `preflight` or advance to mutation for that result. The
+next read-only step audits the actual system-side binaries available in matching
+DeviceSupport:
+
+```sh
+bash Experiments/watchos27-device-face.sh audit
+```
+
+This host-only audit does not build, install, launch, or modify anything on the
+Watch. It distinguishes the real `ClockFace.app/ClockFace` executable from the
+unrelated accessibility bundle and prints explicit missing-component markers.
+
 Follow [Docs/watchos27/DEVICE_SYSTEM_FACE_PROBE.md](Docs/watchos27/DEVICE_SYSTEM_FACE_PROBE.md)
 for the guarded `install`, `select`, and `rollback` stages. Each stage must emit
 a `SYSTEM_FACE_RESULT` record; a successful build or launch is not treated as a
@@ -167,7 +180,8 @@ The watchOS 27 device and watchOS simulator frameworks are **not interchangeable
 - [x] App-local bundle loader and manager bridge implemented
 - [x] Argon internal unencrypted-bundle path identified statically
 - [x] ABI-gated physical `LibraryFaces` preflight/install/select/rollback probe implemented
-- [ ] Run the physical-device collection preflight and capture `SYSTEM_FACE_RESULT`
+- [x] Physical preflight captured: XPC proxy present, `LibraryFaces` load timed out
+- [ ] Run the host-side system-boundary audit against matching DeviceSupport
 - [ ] Confirm loaded-image UUID and host behavior at runtime
 - [ ] Establish Argon executable-versus-resource payload type
 - [ ] Demonstrate trusted, durable system `ClockFace` registration

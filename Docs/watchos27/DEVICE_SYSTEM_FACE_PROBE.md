@@ -24,6 +24,24 @@ It also repeats the same non-mutating registration through a dedicated XPC error
 handler after a timeout, so an explicit service rejection can be recorded.
 Continue only when its JSON says `"pass":true`.
 
+The watchOS 27.0.1 run reached `NSXPCConnection`, successfully enqueued the
+registration message, and received neither collection state nor an explicit
+transport error before timeout. Repeating the app preflight cannot distinguish
+service identity, entitlement, sandbox, or server-policy rejection. Inspect the
+static system side next:
+
+```sh
+bash Experiments/watchos27-device-face.sh audit
+```
+
+`audit` is host-only and non-mutating. It resolves the matching DeviceSupport
+tree, accepts only the exact `/Applications/ClockFace.app/ClockFace` binary
+(never the similarly named accessibility bundle), and reports when ClockFace,
+`nanotimekitd`, FaceSupport components, launchd plists, signatures, or
+entitlements are absent from the symbol set. DeviceSupport copies may have
+stripped code signatures or entitlements, so absence there is not proof of
+absence on the running Watch.
+
 ```sh
 bash Experiments/watchos27-device-face.sh install
 ```
@@ -73,6 +91,10 @@ bash Experiments/watchos27-device-face.sh result
   the same visibility.
 - successful selection plus visible Pip-Boy after leaving WatchFaceLab is the
   required system-level result.
+
+Do not run `install` after a preflight collection-load timeout. A sent XPC
+message is not evidence that the server accepted it, and mutation completion
+would be ambiguous without a loaded reference collection.
 
 The bootstrap gives the probe up to 25 seconds, rejects stale result files using
 a per-run identifier, and fails when it cannot copy a matching JSON record from
