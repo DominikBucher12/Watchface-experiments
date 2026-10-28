@@ -12,7 +12,7 @@ usage() {
         "usage: $0 prepare <research-simulator-udid>" \
         "       $0 activate <research-simulator-udid> <overlay-root>" \
         "       $0 install <research-simulator-udid>" \
-        "       $0 show <research-simulator-udid> [face-index]" \
+        "       $0 show <research-simulator-udid> <face-index>" \
         "       $0 remove <research-simulator-udid>" \
         "       $0 status <research-simulator-udid>" \
         "       $0 rollback <research-simulator-udid>"
@@ -219,7 +219,7 @@ case "$action" in
         ;;
 
     show)
-        face_index="${3:-1}"
+        face_index="${3:-}"
         if [[ ! "$face_index" =~ ^[0-9]+$ || "$face_index" -gt 31 ]]; then
             printf 'ERROR: invalid face index: %s\n' "$face_index" >&2
             exit 74

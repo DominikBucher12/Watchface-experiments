@@ -42,15 +42,21 @@ static NSString *MYFaceIdentifier(id face) {
     return [face respondsToSelector:selector] ? MYSendObject(face, selector) : nil;
 }
 
-static id MYCustomFaceInCollection(id collection) {
+static NSUInteger MYCustomFaceIndexInCollection(id collection) {
     SEL countSelector = sel_registerName("numberOfFaces");
     SEL faceSelector = sel_registerName("faceAtIndex:");
     NSUInteger count = MYSendUnsigned(collection, countSelector);
     for (NSUInteger index = 0; index < count; index++) {
         id face = MYSendObjectUnsigned(collection, faceSelector, index);
-        if ([MYFaceIdentifier(face) isEqualToString:MYBundleIdentifier]) return face;
+        if ([MYFaceIdentifier(face) isEqualToString:MYBundleIdentifier]) return index;
     }
-    return nil;
+    return NSNotFound;
+}
+
+static id MYCustomFaceInCollection(id collection) {
+    NSUInteger index = MYCustomFaceIndexInCollection(collection);
+    return index == NSNotFound ? nil : MYSendObjectUnsigned(
+        collection, sel_registerName("faceAtIndex:"), index);
 }
 
 static void MYPrint(NSDictionary *result) {
@@ -126,7 +132,9 @@ int main(int argc, const char *argv[]) {
         }
 
         if (existing) {
-            MYPrint(@{@"error": @"custom face already present", @"count": @(beforeCount)});
+            MYPrint(@{@"error": @"custom face already present",
+                      @"count": @(beforeCount),
+                      @"index": @(MYCustomFaceIndexInCollection(collection))});
             return 69;
         }
         CLKDevice *device = [CLKDevice currentDevice];
@@ -201,6 +209,7 @@ int main(int argc, const char *argv[]) {
         }
         MYPrint(@{@"mode": mode, @"added": @YES, @"selected": @(selected),
                   @"uuid": newUUID.UUIDString,
+                  @"index": @(beforeCount),
                   @"countBefore": @(beforeCount),
                   @"countAfter": @(MYSendUnsigned(collection, countSelector))});
         return selected ? 0 : 72;

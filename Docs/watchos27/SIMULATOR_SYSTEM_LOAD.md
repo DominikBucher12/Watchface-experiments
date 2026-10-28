@@ -82,7 +82,11 @@ bash Experiments/quickstart-system-face.sh WATCHOS-27-RESEARCH-SIMULATOR-UUID
 The quickstart boots the selected simulator, derives its runtime root, builds
 for that runtime's architecture and minimum OS, prepares a non-destructive
 hybrid root, loads the bundle in both system processes, installs/selects the
-face, switches the live ClockFace UI, and opens Simulator.
+face, derives its actual collection index, switches that face in the live
+ClockFace UI, and opens Simulator. It does not assume the custom face is at
+index 1; watchOS runtime defaults may contain a different number of faces. The
+simulated display can be asleep immediately after ClockFace restarts. Click the
+Simulator window's **Crown** button once to wake it.
 
 Rollback is printed after a successful run and has this form:
 

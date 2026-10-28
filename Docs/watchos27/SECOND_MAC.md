@@ -33,6 +33,11 @@ The script checks the active Xcode and SDK, finds the newest available watchOS
 the runtime's actual architecture, prepares a temporary hybrid root, installs
 and selects the custom face, and opens Simulator.
 
+ClockFace is restarted during the procedure, so the simulated display may be
+black or show its inactive clock immediately afterward. Click the **Crown**
+button on the right side of the Simulator window once to wake it. The animated
+Pip-Boy face should then appear.
+
 It does not modify the Apple runtime. Build products and the hybrid root live in
 `/tmp`; the only persistent object it creates is the dedicated Simulator device.
 

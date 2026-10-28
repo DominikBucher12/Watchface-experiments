@@ -107,9 +107,13 @@ if [[ "$install_status" -ne 0 ]]; then
         exit "$install_status"
     fi
 fi
+face_index="$(sed -nE 's/.*"index":([0-9]+).*/\1/p' \
+    <<<"$install_output" | tail -1)"
+[[ -n "$face_index" ]] ||
+    fail "the collection probe did not report the custom face index"
 
-say "Switching the live ClockFace UI to the custom face"
-bash "$driver" show "$simulator_udid" 1
+say "Switching the live ClockFace UI to custom face index $face_index"
+bash "$driver" show "$simulator_udid" "$face_index"
 
 open -a Simulator >/dev/null 2>&1 || true
 cleanup_needed=0
@@ -117,7 +121,8 @@ trap - EXIT
 
 printf '\n%s\n' \
     "READY: the Pip-Boy face is installed, selected, and animating." \
-    "If another watch app is covering it, press Digital Crown until the face appears." \
+    "The simulated display may be asleep after ClockFace restarts." \
+    "Click the Crown button in Simulator once to wake it; press it again only if an app is covering the face." \
     "Overlay: $overlay_root" \
     "" \
     "Clean rollback:" \
