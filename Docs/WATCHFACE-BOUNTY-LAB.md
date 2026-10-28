@@ -32,11 +32,35 @@ or another person's Watch.
 
 ## 1. Export and inspect a control face
 
-Configure a normal Apple system face, optionally add **Pip-Boy Monitor**, and
+Configure a normal built-in Apple face without third-party complications and
 use the system Share action to export it. Keep the export private because its
-complication configuration may contain personal data.
+configuration may contain personal data. Do not use **Pip-Boy Monitor** for the
+first baseline: Apple requires complications in an imported shared face to
+have a valid App Store or TestFlight identity, while this branch is a local
+development build.
 
-On the Mac with the repository:
+The most reliable export flow is on the paired iPhone:
+
+1. Open the **Watch** app.
+2. Open **My Watch** and tap one face under **My Faces**.
+3. Tap the Share button in the upper-right corner.
+4. Choose **AirDrop** and select the Mac. Alternatively, choose **Save to
+   Files**, then move the resulting `.watchface` to the Mac.
+
+Apple does not document a public export API or a `simctl`/`devicectl` export
+command. Its public `CLKWatchFaceLibrary` API only imports an existing
+`.watchface`. The following helper cannot press Share for you, but it waits for
+the AirDropped file in Downloads, validates it, and generates the corpus
+immediately:
+
+```sh
+bash Experiments/watchface-parser-lab.sh capture
+```
+
+Start `capture` first, then perform the four iPhone steps within five minutes.
+It prints the resulting `CORPUS` path and the exact baseline command.
+
+For a file that is already on the Mac, inspect it directly:
 
 ```sh
 git switch research/watchface-parser

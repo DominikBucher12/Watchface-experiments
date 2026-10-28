@@ -11,6 +11,7 @@ result_name='WatchFaceLab-ParserResult.json'
 usage() {
     printf '%s\n' \
         "usage:" \
+        "  $0 capture [--downloads DIR] [--timeout SECONDS] [--output CORPUS-DIR]" \
         "  $0 inspect INPUT.watchface" \
         "  $0 generate INPUT.watchface [--output CORPUS-DIR]" \
         "  $0 list CORPUS-DIR" \
@@ -96,6 +97,80 @@ case "$command_name" in
     help|--help|-h)
         usage
         exit 0
+        ;;
+    capture)
+        downloads_dir="$HOME/Downloads"
+        capture_timeout=300
+        output_dir=""
+        while [[ $# -gt 0 ]]; do
+            case "$1" in
+                --downloads)
+                    [[ $# -ge 2 ]] || fail '--downloads requires a directory'
+                    downloads_dir="$2"
+                    shift 2
+                    ;;
+                --timeout)
+                    [[ $# -ge 2 ]] || fail '--timeout requires seconds'
+                    capture_timeout="$2"
+                    [[ "$capture_timeout" =~ ^[1-9][0-9]*$ ]] || fail \
+                        '--timeout must be a positive integer'
+                    shift 2
+                    ;;
+                --output)
+                    [[ $# -ge 2 ]] || fail '--output requires a directory'
+                    output_dir="$2"
+                    shift 2
+                    ;;
+                *) fail "unknown capture option: $1" ;;
+            esac
+        done
+        [[ -d "$downloads_dir" ]] || fail \
+            "download directory does not exist: $downloads_dir"
+        require_command python3
+
+        before_list="$(mktemp /tmp/WatchFaceLab-Capture-Before.XXXXXX)"
+        current_list="$(mktemp /tmp/WatchFaceLab-Capture-Current.XXXXXX)"
+        trap 'rm -f "$before_list" "$current_list"' EXIT
+        find "$downloads_dir" -maxdepth 1 -type f -iname '*.watchface' -print |
+            LC_ALL=C sort >"$before_list"
+
+        printf '%s\n' \
+            "CAPTURE_WAITING directory=$downloads_dir timeout=${capture_timeout}s" \
+            'On iPhone: Watch app -> My Watch -> tap a built-in face -> Share -> AirDrop to this Mac.' \
+            'Use an Apple face without third-party/development complications for the baseline.'
+
+        captured_face=""
+        deadline=$((SECONDS + capture_timeout))
+        while (( SECONDS < deadline )); do
+            find "$downloads_dir" -maxdepth 1 -type f -iname '*.watchface' -print |
+                LC_ALL=C sort >"$current_list"
+            captured_face="$(comm -13 "$before_list" "$current_list" | head -1 || true)"
+            if [[ -n "$captured_face" && -f "$captured_face" ]]; then
+                first_size="$(stat -f '%z' "$captured_face")"
+                sleep 2
+                second_size="$(stat -f '%z' "$captured_face")"
+                if [[ "$first_size" == "$second_size" && "$second_size" != "0" ]]; then
+                    break
+                fi
+                captured_face=""
+            fi
+            sleep 2
+        done
+        [[ -n "$captured_face" ]] || fail \
+            "no new .watchface appeared in $downloads_dir within ${capture_timeout}s"
+
+        if [[ -z "$output_dir" ]]; then
+            input_name="$(basename "$captured_face" .watchface)"
+            safe_name="$(tr -cd '[:alnum:]_.-' <<<"$input_name")"
+            [[ -n "$safe_name" ]] || safe_name='OwnedFace'
+            output_dir="$generated_root/$safe_name-$(date -u +%Y%m%d-%H%M%S)"
+        fi
+        printf 'CAPTURED_FACE=%s\n' "$captured_face"
+        python3 "$parser_tool" inspect "$captured_face"
+        python3 "$parser_tool" generate "$captured_face" "$output_dir"
+        printf '%s\n' \
+            "CORPUS=$output_dir" \
+            "NEXT: $0 run '$output_dir' 000-baseline --owned-device"
         ;;
     inspect)
         [[ $# -eq 1 ]] || fail 'inspect requires exactly one .watchface path'

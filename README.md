@@ -5,6 +5,8 @@
 > `bash Experiments/watchface-parser-lab.sh generate OWNED.watchface`, run the
 > byte-identical baseline first, and advance only one explicit case at a time.
 > See [Docs/WATCHFACE-BOUNTY-LAB.md](Docs/WATCHFACE-BOUNTY-LAB.md).
+> `bash Experiments/watchface-parser-lab.sh capture` waits for an AirDropped
+> system export and prepares it without requiring a manually typed path.
 
 > **`complication` branch:** This branch implements the stock-device fallback:
 > a public WidgetKit Pip-Boy complication embedded in a clean watchOS host app.
