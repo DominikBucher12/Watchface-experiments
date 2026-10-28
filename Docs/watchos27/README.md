@@ -28,6 +28,8 @@ Render a custom Pip-Boy-inspired native `NTKFace` / `NTKFaceView`, then determin
 - [SIMULATOR_SYSTEM_LOAD.md](SIMULATOR_SYSTEM_LOAD.md) — runtime-driven system
   ClockFace loader port, one-command quickstart, safeguards, and current 27
   runtime verification gap.
+- [SECOND_MAC.md](SECOND_MAC.md) — no-Codex bootstrap for a second Mac with a
+  watchOS 27 Simulator runtime.
 - [BUILD_AND_REPRODUCTION.md](BUILD_AND_REPRODUCTION.md) — build/packaging flow, device checks, previous build failures.
 - [EXPERIMENT_LOG.md](EXPERIMENT_LOG.md) — chronological results and log evidence.
 - [ARGON_AND_MANAGER.md](ARGON_AND_MANAGER.md) — Argon architecture, symbols, selector ABI, limitations.

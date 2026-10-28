@@ -50,15 +50,34 @@ bash Experiments/check-watchos27-port.sh
 
 ## Quickstart
 
-Run as the logged-in macOS user, never with `sudo`:
+On a second Mac, after pulling `version/simulator27`, run as the logged-in macOS
+user, never with `sudo`:
+
+```sh
+bash Experiments/bootstrap-watchos27-simulator.sh
+```
+
+The bootstrap requires the full Xcode application and an installed watchOS 27.x
+Simulator runtime. If the runtime is missing, install it in **Xcode > Settings >
+Components** and rerun. It selects the newest available 27.x runtime, creates a
+compatible dedicated simulator named `WatchFaceLab27 Research`, boots it, and
+passes its UUID to the existing quickstart. No UUID needs to be copied between
+computers.
+
+Read-only preflight and create-only modes are available for troubleshooting:
+
+```sh
+bash Experiments/bootstrap-watchos27-simulator.sh --check
+bash Experiments/bootstrap-watchos27-simulator.sh --create-only
+```
+
+For multiple installed 27.x runtimes or an unusual device profile, use
+`--runtime` and `--device-type`; `--help` prints all overrides. To reuse an
+already-created research simulator directly, run:
 
 ```sh
 bash Experiments/quickstart-system-face.sh WATCHOS-27-RESEARCH-SIMULATOR-UUID
 ```
-
-Without an argument the script prefers an available device whose name matches
-`WatchFaceLab27…Research`, then falls back to any single `WatchFaceLab…Research`
-device.
 
 The quickstart boots the selected simulator, derives its runtime root, builds
 for that runtime's architecture and minimum OS, prepares a non-destructive
