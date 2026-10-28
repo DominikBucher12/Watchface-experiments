@@ -1,7 +1,8 @@
 # Repository cleanup manifest
 
-Prepared on 2026-10-28 before rewriting any history. No path in the removal
-manifest was deleted while preparing this document.
+Prepared on 2026-10-28 before rewriting any history. The listed generated and
+external artifacts have now been removed from the `version/simulator27` working
+tree, but the history rewrite and force-push remain pending explicit approval.
 
 ## Verified backups
 
@@ -39,10 +40,10 @@ git clone /Users/dominikbucher/Hacking/Watchface-experiments-pre-cleanup-2026-10
 - target size declared by those pointers: 3,239.56 MiB;
 - `Analysis/Extracted`: 2,306 pointers declaring 2,841.55 MiB.
 
-## Proposed removal manifest
+## Applied working-tree removal manifest
 
-These are generated products, external runtime contents, derived dumps, or
-personal editor state. Deletion still requires explicit owner confirmation.
+These generated products, external runtime contents, derived dumps, and personal
+editor state were removed after explicit owner confirmation:
 
 ```text
 Experiments/ClockFaceLab/Analysis/Extracted/
@@ -65,7 +66,8 @@ mrdka3.txt
 picovina.txt
 ```
 
-`sracka.sh` is a one-off local search helper and is a separate optional removal.
+The one-off root search helper `sracka.sh` was removed in the same approved
+cleanup.
 
 ## Files to retain
 

@@ -33,6 +33,9 @@ historical_binary="$repo_root/Experiments/Build/Simulator/MYCustomFaceExperiment
 if [[ -f "$historical_binary" ]]; then
     printf '%s\n' '=== Historical watchOS 27 simulator build metadata ==='
     xcrun vtool -show-build "$historical_binary"
+else
+    printf '%s\n' \
+        '=== Historical metadata skipped (generated Build/ is not tracked) ==='
 fi
 
 printf '%s\n' '=== New port compile objects ==='

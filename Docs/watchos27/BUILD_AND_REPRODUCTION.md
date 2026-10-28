@@ -1,5 +1,10 @@
 # Device build, embedding, and reproduction
 
+`Experiments/Build/` is generated and intentionally ignored. A clean checkout
+does not contain the framework, bundle, or dSYM described below; the build
+sequence recreates them before Xcode embeds and signs them. Apple DeviceSupport
+binaries remain in Xcode's directories and must never be copied into Git.
+
 ## Environment and components
 
 - **Physical device:** Apple Watch Series 9, watchOS 27.0.1 (24R365), CPU arm64e; Developer Mode enabled.
@@ -7,8 +12,8 @@
 - **Application:** `WatchFaceLab` (`dev.develodom.WatchFaceLab`).
 - **Native classes:** `MYCustomFace` (`NTKFace`) and `MYCustomFaceView` (`NTKFaceView`), with `NTKDigitalTimeLabel`.
 - **Assets:** `WatchFaceLab/Resources/pip-boy-reference.gif`.
-- **Framework:** `Experiments/Build/Device/MYCustomFaceExperiment.framework`, installed in `WatchFaceLab.app/Frameworks`.
-- **Local bundle:** `Experiments/Build/Device/FaceBundles/MYLocalFaceBundle.bundle`, embedded as an app resource; bundle identifier `dev.develodom.WatchFaceLab.LocalFaceBundle`; principal class `MYLocalFaceBundle`.
+- **Generated framework:** `Experiments/Build/Device/MYCustomFaceExperiment.framework`, installed in `WatchFaceLab.app/Frameworks`.
+- **Generated local bundle:** `Experiments/Build/Device/FaceBundles/MYLocalFaceBundle.bundle`, embedded as an app resource; bundle identifier `dev.develodom.WatchFaceLab.LocalFaceBundle`; principal class `MYLocalFaceBundle`.
 - **Main Swift entry:** `WatchFaceLab/CustomFaceLoader.swift`, `dlopen` + `dlsym` of framework exports.
 
 ## Relevant files

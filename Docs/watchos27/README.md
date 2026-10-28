@@ -25,6 +25,10 @@ Render a custom Pip-Boy-inspired native `NTKFace` / `NTKFaceView`, then determin
 
 ## Documents
 
+- [../REPOSITORY_CLEANUP.md](../REPOSITORY_CLEANUP.md) — artifact policy,
+  verified pre-cleanup backups, ignored generated paths, and history-rewrite
+  recovery instructions. Extracted Apple runtime files are not part of a clean
+  checkout.
 - [SIMULATOR_SYSTEM_LOAD.md](SIMULATOR_SYSTEM_LOAD.md) — runtime-driven system
   ClockFace loader port, one-command quickstart, safeguards, and current 27
   runtime verification gap.

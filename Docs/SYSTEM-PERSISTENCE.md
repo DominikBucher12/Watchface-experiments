@@ -214,5 +214,7 @@ every consumer's class-loading path.
   code-signing checks enforced elsewhere.
 
 All addresses refer to the installed watchOS 26.5 x86_64 simulator runtime.
-Historical `mrdka.txt` is used only as a disassembly text file; no Apple binary or
-header was copied into the project.
+The observations were originally derived from the historical `mrdka.txt`
+disassembly dump. That generated dump has been removed from the clean repository;
+the conclusions and relevant addresses are preserved in this document. No Apple
+binary or header is required in the project.

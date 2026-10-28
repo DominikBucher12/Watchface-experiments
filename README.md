@@ -4,6 +4,20 @@
 >
 > **Scope:** This document describes `Experiments/` on the `version/27` branch. Findings marked **Verified** are based on the device, tool output, or the watchOS 27.0.1 NanoTimeKit binary; **Hypothesis / Open** means not experimentally established.
 
+## Clean checkout and external artifacts
+
+Apple runtime files, extracted system frameworks, disassembly dumps, generated
+app clones, compiled frameworks, and Xcode user state are intentionally not
+stored in the repository. Simulator experiments resolve private frameworks from
+the selected CoreSimulator runtime at execution time; device experiments use
+the Xcode DeviceSupport paths documented below. Build outputs go to `/tmp` or an
+ignored `Experiments/Build/` directory.
+
+Do not commit a copied `RuntimeRoot`, `ClockFace.app`, `.simruntime`, framework
+dump, or locally built `.app`/`.dylib`. See
+[Docs/REPOSITORY_CLEANUP.md](Docs/REPOSITORY_CLEANUP.md) for the artifact policy,
+backup locations, restoration procedure, and history-cleanup status.
+
 ## Simulator system-loader port
 
 This branch now also contains a runtime-driven port of the working Simulator

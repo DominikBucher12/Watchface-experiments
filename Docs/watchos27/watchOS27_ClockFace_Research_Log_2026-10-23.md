@@ -1,5 +1,11 @@
 # watchOS 27: Native Custom Watch Face / ClockFace Reverse Engineering
 
+> **Repository hygiene (2026-10-28):** Paths below under `Experiments/Build`,
+> `ClockFaceLab.app`, or `Analysis/Extracted` describe historical generated
+> artifacts. They are intentionally absent from a clean checkout and ignored by
+> Git. Rebuild from source or resolve files from the installed Xcode/CoreSimulator
+> runtime; see `Docs/REPOSITORY_CLEANUP.md`.
+
 **Technický deník a předávací dokument — 23. října 2026**  
 **Projekt:** Pip-Boy ciferník pro Apple Watch (nativní watch face)  
 **Repozitář:** `~/Hacking/Watchface-experiments`  

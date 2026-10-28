@@ -10,5 +10,16 @@ or validate watchOS Simulator bootstrap access. Both XPC endpoints reside in
 one test process. It only establishes that the modeled asynchronous request,
 reply, and NSXPCInterface wiring work on macOS.
 
-Run: `bash setup-argon-xpc-lab.sh` from the repository root, or pass an output
-folder. For the real watchOS probe, retain your existing read-only code.
+The compiled lab binary is intentionally not checked in. Build and run it from
+the repository root without writing a product into the source tree:
+
+```sh
+xcrun clang -fobjc-arc -framework Foundation \
+  Experiments/ArgonXPCLab/ArgonXPCLab.m \
+  -o /tmp/WatchFaceLab-ArgonXPCLab
+/tmp/WatchFaceLab-ArgonXPCLab
+```
+
+For the real watchOS probe, retain your existing read-only code. General
+artifact and cleanup policy is in
+[`Docs/REPOSITORY_CLEANUP.md`](../../Docs/REPOSITORY_CLEANUP.md).
