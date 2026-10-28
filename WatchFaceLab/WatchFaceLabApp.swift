@@ -10,7 +10,9 @@ struct WatchFaceLabApp: App {
         }
         .onChange(of: scenePhase, initial: true) { _, phase in
             if phase == .active {
-                CustomFaceLoader.present()
+                if !CustomFaceLoader.runRequestedSystemAction() {
+                    CustomFaceLoader.present()
+                }
             }
         }
     }

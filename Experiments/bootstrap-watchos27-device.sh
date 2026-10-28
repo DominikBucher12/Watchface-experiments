@@ -6,13 +6,16 @@ experiments_dir="$repo_root/Experiments"
 device_id="${WATCHFACELAB_DEVICE_ID:-}"
 build_only=0
 check_only=0
+system_action=""
 
 usage() {
     printf '%s\n' \
         "usage: $0 [--device COREDEVICE-ID] [--build-only] [--check]" \
+        "          [--system-action preflight|install|select|rollback]" \
         "" \
-        "Builds, signs, installs and launches the app-contained watchOS 27 experiment." \
-        "It does not modify ClockFace or register a persistent system watchface."
+        "Builds, signs, installs and launches the watchOS 27 experiment." \
+        "Without --system-action it only runs the app-contained preview." \
+        "install/select/rollback explicitly mutate the persistent LibraryFaces collection."
 }
 
 fail() {
@@ -34,6 +37,15 @@ while [[ $# -gt 0 ]]; do
         --check)
             check_only=1
             shift
+            ;;
+        --system-action)
+            [[ $# -ge 2 ]] || fail '--system-action requires a value'
+            system_action="$2"
+            case "$system_action" in
+                preflight|install|select|rollback) ;;
+                *) fail "invalid system action: $system_action" ;;
+            esac
+            shift 2
             ;;
         --help|-h)
             usage
@@ -134,10 +146,27 @@ printf 'DEVICE_STEP=4/5 install signed app on %s\n' "$device_id"
 xcrun devicectl device install app --device "$device_id" "$app_path"
 
 printf 'DEVICE_STEP=5/5 launch WatchFaceLab\n'
-xcrun devicectl device process launch --device "$device_id" \
-    --terminate-existing dev.develodom.WatchFaceLab
+if [[ -n "$system_action" ]]; then
+    set +e
+    xcrun devicectl device process launch --device "$device_id" \
+        --environment-variables "{\"WATCHFACELAB_SYSTEM_ACTION\":\"$system_action\"}" \
+        --terminate-existing --console --timeout 20 \
+        dev.develodom.WatchFaceLab
+    console_status=$?
+    set -e
+    printf 'DEVICE_CONSOLE_STATUS=%s (timeout after capture is expected)\n' "$console_status"
+    if [[ "$console_status" == "0" ]]; then
+        launch_result='PASS'
+    else
+        launch_result='CHECK_CONSOLE'
+    fi
+else
+    xcrun devicectl device process launch --device "$device_id" \
+        --terminate-existing dev.develodom.WatchFaceLab
+    launch_result='PASS'
+fi
 
 printf '%s\n' \
-    'DEVICE_RUN=PASS' \
-    'The native Pip-Boy renderer is running inside WatchFaceLab.' \
-    'Press the Digital Crown to confirm that it does not persist as the system ClockFace.'
+    "DEVICE_LAUNCH=$launch_result" \
+    "SYSTEM_ACTION=${system_action:-none}" \
+    'Inspect the WatchFaceLab device console for SYSTEM_FACE_RESULT.'

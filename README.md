@@ -52,6 +52,18 @@ bash Experiments/bootstrap-watchos27-device.sh
 Use `--build-only` while the paired Watch is unavailable. This flow does not
 modify or register with the system `ClockFace` process.
 
+The next staged system-library experiment starts with a read-only ABI and XPC
+preflight:
+
+```sh
+bash Experiments/bootstrap-watchos27-device.sh --system-action preflight
+```
+
+Follow [Docs/watchos27/DEVICE_SYSTEM_FACE_PROBE.md](Docs/watchos27/DEVICE_SYSTEM_FACE_PROBE.md)
+for the guarded `install`, `select`, and `rollback` stages. Each stage must emit
+a `SYSTEM_FACE_RESULT` record; a successful build or launch is not treated as a
+system-face result.
+
 The lower-level device build script targets arm64 watchOS, validates private
 framework device platforms, and emits experimental binaries **without signing
 them**. This is intentional: the enclosing watchOS app's Xcode build/signing
@@ -154,6 +166,8 @@ The watchOS 27 device and watchOS simulator frameworks are **not interchangeable
 - [x] Custom watch-face renderer working inside WatchFaceLab (app lifecycle only)
 - [x] App-local bundle loader and manager bridge implemented
 - [x] Argon internal unencrypted-bundle path identified statically
+- [x] ABI-gated physical `LibraryFaces` preflight/install/select/rollback probe implemented
+- [ ] Run the physical-device collection preflight and capture `SYSTEM_FACE_RESULT`
 - [ ] Confirm loaded-image UUID and host behavior at runtime
 - [ ] Establish Argon executable-versus-resource payload type
 - [ ] Demonstrate trusted, durable system `ClockFace` registration

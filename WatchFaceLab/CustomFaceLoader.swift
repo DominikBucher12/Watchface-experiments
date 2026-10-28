@@ -11,22 +11,61 @@ import Darwin
 @MainActor
 enum CustomFaceLoader {
     private static var didPresent = false
+    private static var didRunSystemAction = false
 
-    @MainActor
-    static func testBundleDiscovery() {
+    private static func loadExperimentFramework() -> UnsafeMutableRawPointer? {
         guard let frameworksURL = Bundle.main.privateFrameworksURL else {
-            print("Argon PoC: Frameworks directory unavailable")
-            return
+            print("WatchFaceLab: Frameworks directory unavailable")
+            return nil
         }
-
         let frameworkURL = frameworksURL
             .appendingPathComponent("MYCustomFaceExperiment.framework")
             .appendingPathComponent("MYCustomFaceExperiment")
-
         guard let handle = dlopen(frameworkURL.path, RTLD_NOW) else {
-            print("Argon PoC: dlopen failed: \(String(cString: dlerror()))")
-            return
+            print("WatchFaceLab: dlopen failed: \(String(cString: dlerror()))")
+            return nil
         }
+        return handle
+    }
+
+    /// Runs only when the device bootstrap explicitly supplies an action.
+    /// Returns true when normal app-local preview presentation should be skipped.
+    static func runRequestedSystemAction() -> Bool {
+        guard let action = ProcessInfo.processInfo.environment["WATCHFACELAB_SYSTEM_ACTION"],
+              !action.isEmpty else { return false }
+        guard !didRunSystemAction else { return true }
+        didRunSystemAction = true
+        guard let handle = loadExperimentFramework() else { return true }
+
+        let noArgumentSymbols = [
+            "preflight": "MYSystemFaceCollectionPreflight",
+            "select": "MYSystemFaceSelectCandidate",
+            "rollback": "MYSystemFaceRollbackCandidate",
+        ]
+        if let symbolName = noArgumentSymbols[action],
+           let symbol = dlsym(handle, symbolName) {
+            let function = unsafeBitCast(symbol, to: (@convention(c) () -> Int8).self)
+            print("SYSTEM_FACE_ACTION action=\(action) result=\(function())")
+            return true
+        }
+        if action == "install",
+           let symbol = dlsym(handle, "MYSystemFaceInstallCandidate") {
+            let function = unsafeBitCast(
+                symbol,
+                to: (@convention(c) (NSString) -> Int8).self
+            )
+            // The face bundle is copied at the app root, so pass that root itself.
+            let appRoot = Bundle.main.bundleURL.path as NSString
+            print("SYSTEM_FACE_ACTION action=install result=\(function(appRoot))")
+            return true
+        }
+        print("SYSTEM_FACE_ACTION action=\(action) result=missing-export-or-unknown-action")
+        return true
+    }
+
+    @MainActor
+    static func testBundleDiscovery() {
+        guard let handle = loadExperimentFramework() else { return }
 
         guard let symbol = dlsym(handle, "MYDiscoverLocalFaceBundle") else {
             print("Argon PoC: discovery symbol unavailable")
@@ -53,19 +92,7 @@ enum CustomFaceLoader {
         testBundleDiscovery()
         guard !didPresent else { return }
 
-        guard let frameworksURL = Bundle.main.privateFrameworksURL else {
-            print("CustomFace: Frameworks directory unavailable")
-            return
-        }
-
-        let frameworkURL = frameworksURL
-            .appendingPathComponent("MYCustomFaceExperiment.framework")
-            .appendingPathComponent("MYCustomFaceExperiment")
-
-        guard let handle = dlopen(frameworkURL.path, RTLD_NOW) else {
-            print("CustomFace: dlopen failed: \(String(cString: dlerror()))")
-            return
-        }
+        guard let handle = loadExperimentFramework() else { return }
 
         if let v3Symbol = dlsym(handle, "MYInspectArgonDescriptorsV3") {
             let v3Probe = unsafeBitCast(v3Symbol, to: (@convention(c) () -> Void).self)

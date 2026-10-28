@@ -23,6 +23,7 @@ The log records **observed results** in chronological order. Exact times are app
 | 17 | Initial static ClockFace audit | Only candidate named `ClockFace` was `AccessibilityBundles/ClockFace.axbundle/ClockFace` | **Wrong executable**; no conclusion about main system process. |
 | 18 | Read sysdiagnose process list | `/Applications/ClockFace.app/ClockFace`, PID 198, bundle `com.apple.clockface`; platform signing flags | Actual system process path identified and library-validation enforcement observed. |
 | 19 | Real ClockFace binary audit | Command prepared, user result **pending** | No findings to record yet. |
+| 20 | Physical `LibraryFaces` collection probe implementation | ABI-gated preflight/install/select/rollback exports compile and package as arm64; device execution pending | Build success is not collection-server acceptance. Await `SYSTEM_FACE_RESULT` from the watchOS 27 device. |
 
 ## Known useful console excerpts
 

@@ -46,6 +46,9 @@ the connection before installation.
 - [EXPERIMENT_LOG.md](EXPERIMENT_LOG.md) — chronological results and log evidence.
 - [ARGON_AND_MANAGER.md](ARGON_AND_MANAGER.md) — Argon architecture, symbols, selector ABI, limitations.
 - [CLOCKFACE_BOUNDARY.md](CLOCKFACE_BOUNDARY.md) — actual system process, signing constraints, next research steps.
+- [DEVICE_SYSTEM_FACE_PROBE.md](DEVICE_SYSTEM_FACE_PROBE.md) — staged, ABI-gated
+  `LibraryFaces` preflight/install/select/rollback experiment for a physical
+  Watch, with device-console evidence requirements.
 
 ## Key terminology
 

@@ -42,6 +42,16 @@ on an available paired Apple Watch, and launches WatchFaceLab. Use
 native face inside WatchFaceLab; it does not modify or register with the system
 `ClockFace` process.
 
+The physical system collection experiment is explicit and staged. Start with:
+
+```sh
+bash Experiments/bootstrap-watchos27-device.sh --system-action preflight
+```
+
+Then follow [`Docs/watchos27/DEVICE_SYSTEM_FACE_PROBE.md`](../Docs/watchos27/DEVICE_SYSTEM_FACE_PROBE.md).
+The bootstrap attaches the device console briefly and prints the authoritative
+`SYSTEM_FACE_RESULT` record.
+
 Manual framework builds remain available. Explicit paths override automatic
 DeviceSupport discovery:
 
