@@ -2,7 +2,9 @@
 
 Prepared on 2026-10-28 before rewriting any history. The listed generated and
 external artifacts have now been removed from the `version/simulator27` working
-tree, but the history rewrite and force-push remain pending explicit approval.
+tree. The obsolete LFS-only `.gitattributes` file was removed after the tree no
+longer contained LFS pointers. Cleanup of the other branches and the approved
+history rewrite are tracked as the remaining steps.
 
 ## Verified backups
 
