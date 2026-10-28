@@ -143,7 +143,21 @@ if [[ "$build_only" == "1" ]]; then
 fi
 
 printf 'DEVICE_STEP=4/5 install signed app on %s\n' "$device_id"
-xcrun devicectl device install app --device "$device_id" "$app_path"
+install_status=1
+for install_attempt in 1 2 3; do
+    set +e
+    xcrun devicectl device install app --device "$device_id" "$app_path"
+    install_status=$?
+    set -e
+    [[ "$install_status" == "0" ]] && break
+    if [[ "$install_attempt" != "3" ]]; then
+        printf 'DEVICE_INSTALL_RETRY attempt=%s/3 status=%s; keep the Watch unlocked and nearby\n' \
+            "$install_attempt" "$install_status"
+        sleep 3
+    fi
+done
+[[ "$install_status" == "0" ]] ||
+    fail 'app installation failed after 3 attempts; unlock the Watch and reopen Xcode Devices and Simulators'
 
 printf 'DEVICE_STEP=5/5 launch WatchFaceLab\n'
 if [[ -n "$system_action" ]]; then

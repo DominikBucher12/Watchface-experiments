@@ -69,3 +69,8 @@ a per-run identifier, and fails when it cannot copy a matching JSON record from
 the app data container. On timeout it prints the latest `SYSTEM_FACE_PROGRESS`
 milestone and lists the app's `Documents` directory, distinguishing a launch,
 framework-load, private-probe, or file-transfer failure.
+
+Transient CoreDevice disconnects during the idempotent app-install step are
+retried up to three times. The bootstrap deliberately does not retry launch or
+any collection mutation automatically, because their completion may be
+ambiguous after a transport failure.
