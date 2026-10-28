@@ -4,6 +4,13 @@ import SwiftUI
 struct WatchFaceLabApp: App {
     @Environment(\.scenePhase) private var scenePhase
 
+    init() {
+        // Device diagnostics must run when the process starts, even when
+        // CoreDevice launches the app while the Watch UI never becomes active.
+        // The loader's one-shot guard keeps the scene callback idempotent.
+        _ = CustomFaceLoader.runRequestedSystemAction()
+    }
+
     var body: some Scene {
         WindowGroup {
             ContentView()

@@ -249,6 +249,25 @@ if [[ -n "$system_action" ]]; then
     xcrun devicectl device process launch --device "$device_id" \
         --environment-variables "{\"WATCHFACELAB_SYSTEM_ACTION\":\"$system_action\",\"WATCHFACELAB_SYSTEM_RUN_ID\":\"$system_run_id\"}" \
         dev.develodom.WatchFaceLab
+    sleep 1
+    set +e
+    post_launch_process_table="$(xcrun devicectl device info processes \
+        --device "$device_id" --timeout 15 2>&1)"
+    post_launch_process_status=$?
+    set -e
+    if [[ "$post_launch_process_status" == "0" ]]; then
+        post_launch_pid="$(awk '/WatchFaceLab|dev\.develodom\.WatchFaceLab/ {
+            for (i = 1; i <= NF; i++) if ($i ~ /^[0-9]+$/) { print $i; exit }
+        }' <<<"$post_launch_process_table")"
+        if [[ -n "$post_launch_pid" ]]; then
+            printf 'DEVICE_PROCESS_AFTER_LAUNCH running pid=%s\n' "$post_launch_pid"
+        else
+            printf 'DEVICE_PROCESS_AFTER_LAUNCH not-running\n'
+        fi
+    else
+        printf 'DEVICE_PROCESS_AFTER_LAUNCH unavailable status=%s\n' \
+            "$post_launch_process_status"
+    fi
     printf 'DEVICE_RESULT_WAIT run=%s (up to 25 seconds)\n' "$system_run_id"
     result_deadline=$((SECONDS + 25))
     attempt=0
