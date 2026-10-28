@@ -2,6 +2,14 @@
 
 Minimal, clean-room **watchOS 26.5** research starter for an **Intel / x86_64** simulator. No dependencies, CocoaPods, Carthage, or XcodeGen.
 
+## Clean checkout
+
+Generated builds, copied Apple runtimes/frameworks, disassembly dumps, `.app`
+clones, and Xcode user state are intentionally excluded. The scripts resolve
+the installed CoreSimulator runtime and write products to `/tmp`; do not copy a
+`RuntimeRoot` into this repository. Backup, artifact, and recovery policy is in
+[Docs/REPOSITORY_CLEANUP.md](Docs/REPOSITORY_CLEANUP.md).
+
 ## Fast animated system-face demo
 
 The end-to-end simulator path is now confirmed. On a disposable simulator named

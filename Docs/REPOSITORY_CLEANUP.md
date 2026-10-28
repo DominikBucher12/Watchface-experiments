@@ -1,7 +1,8 @@
 # Repository cleanup manifest
 
-Prepared on 2026-10-28 before rewriting any history. No path in the removal
-manifest was deleted while preparing this document.
+Prepared on 2026-10-28 before rewriting any history. Generated artifacts and
+personal Xcode state were removed from this branch after explicit approval; the
+verified backup and bundle below retain its original history.
 
 ## Verified backups
 
