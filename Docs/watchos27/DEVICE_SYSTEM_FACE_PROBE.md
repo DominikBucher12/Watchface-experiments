@@ -74,9 +74,10 @@ The bootstrap gives the probe up to 25 seconds, rejects stale result files using
 a per-run identifier, and fails when it cannot copy a matching JSON record from
 the app data container. On timeout it prints the latest `SYSTEM_FACE_PROGRESS`
 milestone and lists the app's `Documents` directory, distinguishing a launch,
-framework-load, private-probe, or file-transfer failure. CoreDevice copies into
-an existing local directory; the failure path also copies the complete remote
-`Documents` directory and prints any JSON it recovers.
+framework-load, private-probe, or file-transfer failure. CoreDevice receives the
+record into a concrete local file whose parent directory already exists. The
+downloader accepts both relative and root-relative remote paths and prints any
+JSON recovered by its failure path.
 
 Transient CoreDevice disconnects during the idempotent app-install step are
 retried up to three times. The bootstrap deliberately does not retry launch or

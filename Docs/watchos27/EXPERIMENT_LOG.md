@@ -29,6 +29,7 @@ The log records **observed results** in chronological order. Exact times are app
 | 23 | Third physical preflight attempt | Build passed; CoreDevice error 4000 disconnected during app installation before launch | Probe did not execute. Added bounded retries only around the idempotent install step. |
 | 24 | Fourth physical preflight attempt | Build/install/launch passed; app `Documents` listed `WatchFaceLab-SystemFaceResult.json` (318 bytes, current timestamp), but per-file copy did not produce the expected local path | Probe produced a record; collection conclusion awaits its contents. Changed CoreDevice receive destination to an existing directory and added a whole-`Documents` fallback. |
 | 25 | Device workflow simplification | Added stable `watchos27-device-face.sh` entry point with automatic physical-Watch selection and `result`/`preflight`/`install`/`select`/`rollback` commands | Future iterations update one script; `result` retrieves the existing JSON without rebuilding, launching, or mutating. |
+| 26 | First convenience `result` fetch | CoreDevice error 7000 / RemoteServices 11001: destination path was an existing directory and could not be opened as a file | Corrected receive target to a concrete file with an existing parent; added relative/root-relative source fallback and property-list JSON validation. |
 
 ## Known useful console excerpts
 

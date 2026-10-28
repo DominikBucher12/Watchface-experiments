@@ -25,6 +25,41 @@ fail() {
     exit 1
 }
 
+copy_system_result_from_device() {
+    local target_device="$1"
+    local local_file="$2"
+    local copy_timeout="$3"
+    local quiet_mode="$4"
+    local remote_file
+    local copy_status
+
+    for remote_file in \
+        'Documents/WatchFaceLab-SystemFaceResult.json' \
+        '/Documents/WatchFaceLab-SystemFaceResult.json'; do
+        rm -f "$local_file"
+        set +e
+        if [[ "$quiet_mode" == "1" ]]; then
+            xcrun devicectl device copy from --device "$target_device" \
+                --domain-type appDataContainer \
+                --domain-identifier dev.develodom.WatchFaceLab \
+                --source "$remote_file" --destination "$local_file" \
+                --quiet --timeout "$copy_timeout" >/dev/null 2>&1
+        else
+            xcrun devicectl device copy from --device "$target_device" \
+                --domain-type appDataContainer \
+                --domain-identifier dev.develodom.WatchFaceLab \
+                --source "$remote_file" --destination "$local_file" \
+                --timeout "$copy_timeout"
+        fi
+        copy_status=$?
+        set -e
+        if [[ "$copy_status" == "0" && -f "$local_file" ]]; then
+            return 0
+        fi
+    done
+    return 1
+}
+
 while [[ $# -gt 0 ]]; do
     case "$1" in
         --device)
@@ -108,15 +143,9 @@ fi
 
 if [[ "$result_only" == "1" ]]; then
     stored_result_dir="$(mktemp -d /tmp/WatchFaceLab-StoredResult.XXXXXX)"
-    xcrun devicectl device copy from --device "$device_id" \
-        --domain-type appDataContainer \
-        --domain-identifier dev.develodom.WatchFaceLab \
-        --source Documents/WatchFaceLab-SystemFaceResult.json \
-        --destination "$stored_result_dir" --timeout 15
-    stored_result_file="$(find "$stored_result_dir" -type f \
-        -name 'WatchFaceLab-SystemFaceResult.json' -print -quit 2>/dev/null || true)"
-    [[ -n "$stored_result_file" ]] ||
-        fail 'CoreDevice completed the copy but the result JSON was not found locally'
+    stored_result_file="$stored_result_dir/WatchFaceLab-SystemFaceResult.json"
+    copy_system_result_from_device "$device_id" "$stored_result_file" 15 0 ||
+        fail 'CoreDevice could not download the stored result JSON'
     stored_result_json="$(<"$stored_result_file")"
     printf 'SYSTEM_FACE_STORED_RESULT %s\n' "$stored_result_json"
     printf 'DEVICE_RESULT_FETCH=PASS TEMP=%s\n' "$stored_result_dir"
@@ -206,49 +235,33 @@ if [[ -n "$system_action" ]]; then
     attempt=0
     while (( SECONDS < result_deadline )); do
         attempt=$((attempt + 1))
-        attempt_dir="$result_dir/attempt-$attempt"
-        mkdir -p "$attempt_dir"
-        set +e
-        xcrun devicectl device copy from --device "$device_id" \
-            --domain-type appDataContainer \
-            --domain-identifier dev.develodom.WatchFaceLab \
-            --source Documents/WatchFaceLab-SystemFaceResult.json \
-            --destination "$attempt_dir" --quiet --timeout 3 \
-            >/dev/null 2>&1
-        copy_status=$?
-        set -e
-        if [[ "$copy_status" == "0" ]]; then
-            copied_file="$(find "$attempt_dir" -type f \
-                -name 'WatchFaceLab-SystemFaceResult.json' -print -quit 2>/dev/null || true)"
-            if [[ -n "$copied_file" ]] &&
-                grep -Fq "\"runID\":\"$system_run_id\"" "$copied_file"; then
+        copied_file="$result_dir/result-$attempt.json"
+        if copy_system_result_from_device "$device_id" "$copied_file" 3 1; then
+            copied_run_id="$(plutil -extract runID raw -o - "$copied_file" 2>/dev/null || true)"
+            if [[ "$copied_run_id" == "$system_run_id" ]]; then
                 progress_file="$copied_file"
-                if grep -Fq '"complete":true' "$copied_file"; then
-                    result_file="$copied_file"
-                    break
-                fi
+                copied_complete="$(plutil -extract complete raw -o - "$copied_file" 2>/dev/null || true)"
+                case "$copied_complete" in
+                    true|YES|1)
+                        result_file="$copied_file"
+                        break
+                        ;;
+                esac
             fi
         fi
         sleep 1
     done
     if [[ -z "$result_file" ]]; then
-        diagnostic_dir="$result_dir/diagnostic"
-        mkdir -p "$diagnostic_dir"
+        diagnostic_file="$result_dir/diagnostic-result.json"
         printf 'DEVICE_RESULT_DIAGNOSTIC_COPY_BEGIN\n'
-        set +e
-        xcrun devicectl device copy from --device "$device_id" \
-            --domain-type appDataContainer \
-            --domain-identifier dev.develodom.WatchFaceLab \
-            --source Documents --destination "$diagnostic_dir" --timeout 10
-        diagnostic_copy_status=$?
-        set -e
-        printf 'DEVICE_RESULT_DIAGNOSTIC_COPY_END status=%s\n' "$diagnostic_copy_status"
-        diagnostic_file="$(find "$diagnostic_dir" -type f \
-            -name 'WatchFaceLab-SystemFaceResult.json' -print -quit 2>/dev/null || true)"
-        if [[ -n "$diagnostic_file" ]]; then
+        if copy_system_result_from_device "$device_id" "$diagnostic_file" 10 0; then
+            diagnostic_copy_status=0
             diagnostic_json="$(<"$diagnostic_file")"
             printf 'SYSTEM_FACE_DIAGNOSTIC %s\n' "$diagnostic_json"
+        else
+            diagnostic_copy_status=$?
         fi
+        printf 'DEVICE_RESULT_DIAGNOSTIC_COPY_END status=%s\n' "$diagnostic_copy_status"
         if [[ -n "$progress_file" ]]; then
             progress_json="$(<"$progress_file")"
             printf 'SYSTEM_FACE_PROGRESS %s\n' "$progress_json"
