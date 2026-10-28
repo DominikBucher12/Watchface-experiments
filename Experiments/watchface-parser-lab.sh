@@ -2,6 +2,7 @@
 set -euo pipefail
 
 repo_root="$(cd "$(dirname "$0")/.." && pwd)"
+script_path="$(cd "$(dirname "$0")" && pwd)/$(basename "$0")"
 parser_tool="$repo_root/Experiments/WatchFaceParser/watchface_corpus.py"
 generated_root="$repo_root/Experiments/WatchFaceParser/Corpus"
 runs_root="$repo_root/Experiments/WatchFaceParser/Runs"
@@ -17,11 +18,13 @@ usage() {
         "  $0 list CORPUS-DIR" \
         "  $0 verify CORPUS-DIR" \
         "  $0 run CORPUS-DIR CASE-ID --owned-device [--device ID]" \
+        "  $0 batch CORPUS-DIR [--plan] [--owned-device] [--device ID]" \
+        "       [--cases ID,ID,...] [--cooldown SECONDS] [--rerun-completed]" \
         "  $0 result --owned-device [--device ID] [--output FILE]" \
         "  $0 diagnose --owned-device [--device ID] [--output DIR]" \
         "" \
-        "The run command builds and imports exactly one selected case. It never" \
-        "loops over the corpus and never retries an import after a possible crash."
+        "The run command imports exactly one selected case. Batch runs a bounded" \
+        "ordered set, skips completed hashes, and stops at the first anomaly."
 }
 
 fail() {
@@ -38,12 +41,12 @@ discover_watch() {
     local device_table
     local available_watch_line
 
-    device_table="$(xcrun devicectl list devices 2>&1 || true)"
-    printf '%s\n' "$device_table" >&2
     if [[ -n "$requested" ]]; then
         printf '%s\n' "$requested"
         return
     fi
+    device_table="$(xcrun devicectl list devices 2>&1 || true)"
+    printf '%s\n' "$device_table" >&2
     available_watch_line="$(grep -Ei 'watch' <<<"$device_table" |
         grep -E 'physical[[:space:]]*$' |
         grep -E 'available|connected' | head -1 || true)"
@@ -86,6 +89,34 @@ copy_result_from_device() {
 require_owned_device() {
     [[ "$1" == "1" ]] || fail \
         'physical-device actions require --owned-device to confirm this is your test device'
+}
+
+case_has_complete_result() {
+    local wanted_id="$1"
+    local wanted_hash="$2"
+    local run_metadata
+    local run_directory
+    local stored_result
+
+    [[ -d "$runs_root" ]] || return 1
+    while IFS= read -r run_metadata; do
+        [[ -f "$run_metadata" ]] || continue
+        if ! jq -e --arg caseID "$wanted_id" --arg caseSHA256 "$wanted_hash" \
+            '.caseID == $caseID and .caseSHA256 == $caseSHA256' \
+            "$run_metadata" >/dev/null 2>&1; then
+            continue
+        fi
+        run_directory="$(dirname "$run_metadata")"
+        stored_result="$run_directory/$result_name"
+        if [[ -f "$stored_result" ]] && \
+            jq -e --arg caseID "$wanted_id" \
+                '.caseID == $caseID and .complete == true' \
+                "$stored_result" >/dev/null 2>&1; then
+            return 0
+        fi
+    done < <(find "$runs_root" -mindepth 2 -maxdepth 2 -type f \
+        -name run.json -print 2>/dev/null)
+    return 1
 }
 
 command_name="${1:-help}"
@@ -207,6 +238,187 @@ case "$command_name" in
     verify)
         [[ $# -eq 1 ]] || fail 'verify requires exactly one corpus directory'
         exec python3 "$parser_tool" verify "$1"
+        ;;
+    batch)
+        [[ $# -ge 1 ]] || fail 'batch requires a corpus directory'
+        corpus_dir="$1"
+        shift
+        device_id="${WATCHFACELAB_DEVICE_ID:-}"
+        owned_device=0
+        plan_only=0
+        rerun_completed=0
+        cooldown_seconds=5
+        cases_csv=""
+        while [[ $# -gt 0 ]]; do
+            case "$1" in
+                --device)
+                    [[ $# -ge 2 ]] || fail '--device requires an identifier'
+                    device_id="$2"
+                    shift 2
+                    ;;
+                --owned-device)
+                    owned_device=1
+                    shift
+                    ;;
+                --plan)
+                    plan_only=1
+                    shift
+                    ;;
+                --rerun-completed)
+                    rerun_completed=1
+                    shift
+                    ;;
+                --cases)
+                    [[ $# -ge 2 ]] || fail '--cases requires comma-separated identifiers'
+                    cases_csv="$2"
+                    shift 2
+                    ;;
+                --cooldown)
+                    [[ $# -ge 2 ]] || fail '--cooldown requires seconds'
+                    cooldown_seconds="$2"
+                    [[ "$cooldown_seconds" =~ ^[0-9]+$ ]] || fail \
+                        '--cooldown must be a nonnegative integer'
+                    shift 2
+                    ;;
+                *) fail "unknown batch option: $1" ;;
+            esac
+        done
+
+        require_command python3
+        require_command jq
+        require_command shasum
+        python3 "$parser_tool" verify "$corpus_dir" >/dev/null
+        available_cases="$(python3 "$parser_tool" list "$corpus_dir" |
+            awk -F '\t' '{print $1}')"
+
+        if [[ -n "$cases_csv" ]]; then
+            IFS=',' read -r -a selected_cases <<<"$cases_csv"
+        else
+            selected_cases=(
+                000-baseline
+                300-extra-unknown-entry
+                104-metadata-unknown-key
+                011-appended-tail
+                010-truncated-tail
+                102-metadata-bitflip
+                101-metadata-truncated
+                100-metadata-empty
+                103-metadata-removed
+                201-asset-bitflip
+                200-asset-truncated
+                202-asset-removed
+            )
+        fi
+        (( ${#selected_cases[@]} <= 12 )) || fail \
+            'batch is limited to 12 explicitly bounded cases'
+
+        batch_plan="$(mktemp /tmp/WatchFaceLab-BatchPlan.XXXXXX)"
+        trap 'rm -f "$batch_plan"' EXIT
+        planned_count=0
+        for case_id in "${selected_cases[@]}"; do
+            if ! grep -Fqx "$case_id" <<<"$available_cases"; then
+                if [[ -n "$cases_csv" ]]; then
+                    fail "requested batch case is unavailable: $case_id"
+                fi
+                printf 'BATCH_CASE=OMIT case=%s reason=not-in-corpus\n' "$case_id"
+                continue
+            fi
+            case_path="$(python3 "$parser_tool" resolve "$corpus_dir" "$case_id")"
+            case_hash="$(shasum -a 256 "$case_path" | awk '{print $1}')"
+            if [[ "$rerun_completed" != "1" ]] && \
+                case_has_complete_result "$case_id" "$case_hash"; then
+                printf 'BATCH_CASE=SKIP case=%s reason=complete hash=%s\n' \
+                    "$case_id" "$case_hash"
+                continue
+            fi
+            printf '%s\t%s\n' "$case_id" "$case_hash" >>"$batch_plan"
+            planned_count=$((planned_count + 1))
+            printf 'BATCH_CASE=PLAN case=%s hash=%s\n' "$case_id" "$case_hash"
+        done
+        if [[ "$plan_only" == "1" ]]; then
+            batch_mode='plan'
+        else
+            batch_mode='run'
+        fi
+        printf 'BATCH_PLAN=PASS cases=%s mode=%s\n' "$planned_count" "$batch_mode"
+
+        if [[ "$plan_only" == "1" || "$planned_count" == "0" ]]; then
+            exit 0
+        fi
+
+        require_owned_device "$owned_device"
+        require_command xcrun
+        [[ "$(uname -s)" == "Darwin" ]] || fail 'device batches require macOS'
+        device_id="$(discover_watch "$device_id")"
+        [[ -n "$device_id" ]] || fail \
+            'no available physical Apple Watch; unlock it and open Xcode Devices and Simulators'
+
+        batch_id="batch-$(date -u +%Y%m%dT%H%M%SZ)-$$"
+        batch_dir="$runs_root/$batch_id"
+        mkdir -p "$batch_dir"
+        summary_file="$batch_dir/summary.tsv"
+        printf 'caseID\tstatus\tsuccess\tsha256\n' >"$summary_file"
+
+        while IFS=$'\t' read -r case_id case_hash; do
+            [[ -n "$case_id" ]] || continue
+            case_log="$batch_dir/$case_id.log"
+            printf 'BATCH_CASE=RUN case=%s device=%s\n' "$case_id" "$device_id"
+            set +e
+            bash "$script_path" run "$corpus_dir" "$case_id" \
+                --owned-device --device "$device_id" 2>&1 | tee "$case_log"
+            case_status=${PIPESTATUS[0]}
+            set -e
+            if [[ "$case_status" != "0" ]]; then
+                printf '%s\tSTOP-%s\tunknown\t%s\n' \
+                    "$case_id" "$case_status" "$case_hash" >>"$summary_file"
+                printf '%s\n' \
+                    "BATCH_STOP case=$case_id status=$case_status" \
+                    "BATCH_EVIDENCE=$batch_dir" \
+                    'Do not rerun the stopped case until its log has been reviewed.'
+                exit "$case_status"
+            fi
+
+            result_json="$(sed -n 's/^PARSER_RESULT //p' "$case_log" | tail -1)"
+            if [[ -z "$result_json" ]] || ! jq -e \
+                --arg caseID "$case_id" \
+                '.caseID == $caseID and .complete == true' \
+                >/dev/null 2>&1 <<<"$result_json"; then
+                printf '%s\tSTOP-invalid-result\tunknown\t%s\n' \
+                    "$case_id" "$case_hash" >>"$summary_file"
+                printf '%s\n' \
+                    "BATCH_STOP case=$case_id status=invalid-result" \
+                    "BATCH_EVIDENCE=$batch_dir"
+                exit 3
+            fi
+            case_success="$(jq -r '.success // false' <<<"$result_json")"
+
+            set +e
+            xcrun devicectl device info processes --device "$device_id" \
+                --quiet --timeout 15 >/dev/null 2>&1
+            health_status=$?
+            set -e
+            if [[ "$health_status" != "0" ]]; then
+                printf '%s\tSTOP-device-unavailable\t%s\t%s\n' \
+                    "$case_id" "$case_success" "$case_hash" >>"$summary_file"
+                printf '%s\n' \
+                    "BATCH_STOP case=$case_id status=device-unavailable" \
+                    "BATCH_EVIDENCE=$batch_dir"
+                exit 3
+            fi
+
+            printf '%s\tPASS\t%s\t%s\n' \
+                "$case_id" "$case_success" "$case_hash" >>"$summary_file"
+            printf 'BATCH_CASE=PASS case=%s success=%s\n' \
+                "$case_id" "$case_success"
+            if [[ "$cooldown_seconds" != "0" ]]; then
+                sleep "$cooldown_seconds"
+            fi
+        done <"$batch_plan"
+
+        printf '%s\n' \
+            "BATCH_RESULT=PASS cases=$planned_count" \
+            "BATCH_EVIDENCE=$batch_dir" \
+            "BATCH_SUMMARY=$summary_file"
         ;;
     run)
         [[ $# -ge 2 ]] || fail 'run requires CORPUS-DIR and CASE-ID'

@@ -7,6 +7,8 @@
 > See [Docs/WATCHFACE-BOUNTY-LAB.md](Docs/WATCHFACE-BOUNTY-LAB.md).
 > `bash Experiments/watchface-parser-lab.sh capture` waits for an AirDropped
 > system export and prepares it without requiring a manually typed path.
+> After a valid baseline, `batch CORPUS --plan` previews the remaining cases and
+> guarded `batch CORPUS --owned-device` stops automatically at the first anomaly.
 
 > **`complication` branch:** This branch implements the stock-device fallback:
 > a public WidgetKit Pip-Boy complication embedded in a clean watchOS host app.

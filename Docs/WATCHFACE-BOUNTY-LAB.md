@@ -130,8 +130,37 @@ bash Experiments/watchface-parser-lab.sh run "$CORPUS" \
   2>&1 | tee ~/Desktop/watchface-one-case.txt
 ```
 
-Review the JSON and Watch state before selecting another case. Do not script a
-loop around `run`.
+Review the JSON and Watch state before selecting another case. Do not create an
+unguarded loop around `run`; use the guarded batch mode below.
+
+### Guarded batch mode
+
+After a successful baseline, the runner can execute the remaining bounded
+cases unattended. Preview the exact plan without contacting the Watch:
+
+```sh
+bash Experiments/watchface-parser-lab.sh batch "$CORPUS" --plan
+```
+
+Then run it:
+
+```sh
+bash Experiments/watchface-parser-lab.sh batch "$CORPUS" \
+  --owned-device 2>&1 | tee ~/Desktop/watchface-batch.txt
+```
+
+The batch recognizes completed cases by case ID and SHA-256 and skips them. It
+runs at most 12 cases in a fixed low-to-higher-impact order with a five-second
+cooldown. Each case still performs a clean signed build and one import. A
+timeout, invalid/missing result, build/install failure, or unavailable Watch
+stops the batch immediately and is never retried. Completed API rejections are
+recorded and the batch may continue because the app and device responded
+normally. Per-case logs and `summary.tsv` are stored under the printed ignored
+`BATCH_EVIDENCE` directory.
+
+Use `--cases ID,ID` to run a smaller explicit subset, `--cooldown SECONDS` to
+increase the pause, or `--rerun-completed` only after manually reviewing the
+earlier evidence.
 
 Expected safe outcomes are either a successful import or a completed error
 from `CLKWatchFaceLibrary`. Neither result is a vulnerability by itself. An app
