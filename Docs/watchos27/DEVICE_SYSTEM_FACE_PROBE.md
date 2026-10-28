@@ -17,8 +17,10 @@ bash Experiments/watchos27-device-face.sh preflight
 
 `preflight` opens the real `NTKPersistentFaceCollection` library client, waits
 for its XPC-backed state, records selector encodings, the selected UUID and
-bundle identifiers, and performs no mutation. Continue only when its JSON says
-`"pass":true`.
+bundle identifiers, and performs no mutation. On load timeout it also records
+the connection, registration flag, reference collection state, current
+`CLKDevice`, and one `_registerIfNeeded` retry when requested by the collection.
+Continue only when its JSON says `"pass":true`.
 
 ```sh
 bash Experiments/watchos27-device-face.sh install

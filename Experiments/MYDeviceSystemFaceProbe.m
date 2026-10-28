@@ -4,6 +4,7 @@
 
 #import <objc/message.h>
 #import <objc/runtime.h>
+#import <string.h>
 
 static NSString * const MYSystemBundleID =
     @"dev.develodom.WatchFaceLab.LocalFaceBundle";
@@ -13,6 +14,7 @@ static NSString * const MYPreviousUUIDKey =
     @"WatchFaceLab.PreviousSelectedUUID";
 static NSDictionary *MYLastCollectionABI;
 static BOOL MYLastMutationABIMatches;
+static NSString *MYUUIDString(id value);
 
 static id MYSendObject(id receiver, SEL selector) {
     return ((id (*)(id, SEL))objc_msgSend)(receiver, selector);
@@ -43,6 +45,76 @@ static NSString *MYEncoding(Class cls, SEL selector) {
     Method method = class_getInstanceMethod(cls, selector);
     const char *encoding = method ? method_getTypeEncoding(method) : NULL;
     return encoding ? [NSString stringWithUTF8String:encoding] : @"missing";
+}
+
+static id MYObjectIvar(id object, const char *name) {
+    Ivar ivar = class_getInstanceVariable(object_getClass(object), name);
+    const char *type = ivar ? ivar_getTypeEncoding(ivar) : NULL;
+    return type && type[0] == '@' ? object_getIvar(object, ivar) : nil;
+}
+
+static NSNumber *MYBoolIvar(id object, const char *name) {
+    Ivar ivar = class_getInstanceVariable(object_getClass(object), name);
+    const char *type = ivar ? ivar_getTypeEncoding(ivar) : NULL;
+    if (!type || strcmp(type, @encode(BOOL)) != 0) return nil;
+    BOOL value = NO;
+    const uint8_t *bytes = (const uint8_t *)(__bridge const void *)(object);
+    memcpy(&value, bytes + ivar_getOffset(ivar), sizeof(value));
+    return @(value);
+}
+
+static NSDictionary *MYCurrentDeviceDiagnostics(void) {
+    NSMutableDictionary *result = [NSMutableDictionary dictionary];
+    Class cls = objc_lookUpClass("CLKDevice");
+    SEL currentSelector = sel_registerName("currentDevice");
+    result[@"classPresent"] = @(cls != Nil);
+    result[@"currentEncoding"] = cls ? MYEncoding(object_getClass((id)cls), currentSelector) : @"missing";
+    id device = cls && [cls respondsToSelector:currentSelector] ?
+        MYSendObject((id)cls, currentSelector) : nil;
+    result[@"currentPresent"] = @(device != nil);
+    result[@"currentClass"] = device ? NSStringFromClass([device class]) : @"nil";
+
+    NSMutableDictionary *uuidMethods = [NSMutableDictionary dictionary];
+    unsigned int methodCount = 0;
+    Method *methods = device ? class_copyMethodList([device class], &methodCount) : NULL;
+    for (unsigned int index = 0; index < methodCount; index++) {
+        SEL selector = method_getName(methods[index]);
+        NSString *name = NSStringFromSelector(selector);
+        NSString *lowercase = name.lowercaseString;
+        if ([lowercase containsString:@"uuid"] || [lowercase containsString:@"pairing"]) {
+            const char *encoding = method_getTypeEncoding(methods[index]);
+            uuidMethods[name] = encoding ? [NSString stringWithUTF8String:encoding] : @"missing";
+        }
+    }
+    free(methods);
+    result[@"identityMethods"] = uuidMethods;
+    return result;
+}
+
+static NSDictionary *MYCollectionDiagnostics(id collection) {
+    NSMutableDictionary *result = [NSMutableDictionary dictionary];
+    id connection = MYObjectIvar(collection, "_connection");
+    id seqID = MYObjectIvar(collection, "_seqId");
+    id referenceOrder = MYObjectIvar(collection, "_referenceOrderedUUIDs");
+    id referenceSelected = MYObjectIvar(collection, "_referenceSelectedUUID");
+    NSNumber *registrationNeeded = MYBoolIvar(collection, "_registrationNeeded");
+    NSNumber *lockHasLoaded = MYBoolIvar(collection, "_lock_hasLoaded");
+    result[@"connectionPresent"] = @(connection != nil);
+    result[@"connectionClass"] = connection ? NSStringFromClass([connection class]) : @"nil";
+    result[@"registrationNeeded"] = registrationNeeded ?: @"unavailable";
+    result[@"lockHasLoaded"] = lockHasLoaded ?: @"unavailable";
+    result[@"seqID"] = [seqID respondsToSelector:@selector(stringValue)] ?
+        [seqID stringValue] : @"nil";
+    result[@"referenceOrderedCount"] = [referenceOrder respondsToSelector:@selector(count)] ?
+        @([referenceOrder count]) : @(-1);
+    result[@"referenceSelectedUUID"] = MYUUIDString(referenceSelected) ?: @"nil";
+    SEL collectionIdentifier = sel_registerName("collectionIdentifier");
+    SEL deviceUUID = sel_registerName("deviceUUID");
+    result[@"collectionIdentifier"] = [collection respondsToSelector:collectionIdentifier] ?
+        (MYSendObject(collection, collectionIdentifier) ?: @"nil") : @"unavailable";
+    result[@"deviceUUID"] = [collection respondsToSelector:deviceUUID] ?
+        (MYUUIDString(MYSendObject(collection, deviceUUID)) ?: @"nil") : @"unavailable";
+    return result;
 }
 
 static NSString *MYFaceBundleIdentifier(id face) {
@@ -156,9 +228,28 @@ static id MYLoadedCollection(BOOL requireMutationABI) {
             @"readABI": @(readABI), @"mutationABI": @(mutationABI) });
         return nil;
     }
+    NSDictionary *initialState = MYCollectionDiagnostics(collection);
+    NSDictionary *deviceState = MYCurrentDeviceDiagnostics();
     if (!MYWaitUntil(^BOOL { return MYSendBool(collection, loaded); }, 12.0)) {
+        NSDictionary *timeoutState = MYCollectionDiagnostics(collection);
+        BOOL retryAttempted = NO;
+        if ([timeoutState[@"registrationNeeded"] boolValue] &&
+            [MYEncoding(concrete, sel_registerName("_registerIfNeeded")) isEqualToString:@"v16@0:8"]) {
+            retryAttempted = YES;
+            ((void (*)(id, SEL))objc_msgSend)(collection, sel_registerName("_registerIfNeeded"));
+            if (MYWaitUntil(^BOOL { return MYSendBool(collection, loaded); }, 8.0)) {
+                return collection;
+            }
+        }
         MYLogResult(@"preflight", @{ @"pass": @NO, @"abi": abi,
-            @"error": @"collection load timeout" });
+            @"error": @"collection load timeout",
+            @"initialState": initialState,
+            @"timeoutState": timeoutState,
+            @"finalState": MYCollectionDiagnostics(collection),
+            @"deviceState": deviceState,
+            @"retryAttempted": @(retryAttempted),
+            @"registerIfNeededEncoding": MYEncoding(concrete,
+                sel_registerName("_registerIfNeeded")) });
         return nil;
     }
     return collection;
