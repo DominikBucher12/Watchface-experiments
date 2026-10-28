@@ -42,6 +42,26 @@ entitlements are absent from the symbol set. DeviceSupport copies may have
 stripped code signatures or entitlements, so absence there is not proof of
 absence on the running Watch.
 
+The physical audit identified `nanotimekitd` as the collection-server host. Its
+embedded entitlements include Mach lookup for
+`com.apple.nanotimekit.collectionserver`, platform-application status,
+FaceSupport storage access, and a separate NanoTimeKit library-replicator
+entitlement. The last entitlement may belong to snapshot replication and is not
+yet proven to gate `LibraryFaces`. The exact `ClockFace.app/ClockFace` binary
+and launchd plist were not present in this DeviceSupport set, while
+`ClockFaceSupport.framework` was present.
+
+The next probe checks the decisive client-side boundary without attempting an
+XPC connection:
+
+```sh
+bash Experiments/watchos27-device-face.sh boundary
+```
+
+`boundary` rebuilds and launches WatchFaceLab, calls `sandbox_check` for the
+collection-server Mach name, and reads only WatchFaceLab's own signed
+entitlements. Its JSON explicitly records `"xpcRequestSent":false`.
+
 ```sh
 bash Experiments/watchos27-device-face.sh install
 ```

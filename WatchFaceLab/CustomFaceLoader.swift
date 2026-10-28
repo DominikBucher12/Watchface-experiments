@@ -79,6 +79,7 @@ enum CustomFaceLoader {
         }
 
         let noArgumentSymbols = [
+            "boundary": "MYSystemFaceBoundaryPreflight",
             "preflight": "MYSystemFaceCollectionPreflight",
             "select": "MYSystemFaceSelectCandidate",
             "rollback": "MYSystemFaceRollbackCandidate",

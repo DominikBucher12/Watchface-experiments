@@ -16,17 +16,18 @@ case "$command" in
         exec bash "$experiments_dir/bootstrap-watchos27-device.sh" \
             --result-only "$@"
         ;;
-    preflight|install|select|rollback)
+    boundary|preflight|install|select|rollback)
         exec bash "$experiments_dir/bootstrap-watchos27-device.sh" \
             --system-action "$command" "$@"
         ;;
     help|--help|-h)
         printf '%s\n' \
             "usage: $0 audit" \
-            "       $0 [result|preflight|install|select|rollback] [--device ID]" \
+            "       $0 [result|boundary|preflight|install|select|rollback] [--device ID]" \
             "" \
             "audit      inspect the static system trust boundary in DeviceSupport" \
             "result     fetch the last JSON without rebuilding or relaunching" \
+            "boundary   query this app's sandbox/entitlements without XPC" \
             "preflight  read-only system collection probe (default)" \
             "install    add the candidate without selecting it" \
             "select     select only a persisted, resolvable candidate" \

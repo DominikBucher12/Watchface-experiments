@@ -72,6 +72,17 @@ This host-only audit does not build, install, launch, or modify anything on the
 Watch. It distinguishes the real `ClockFace.app/ClockFace` executable from the
 unrelated accessibility bundle and prints explicit missing-component markers.
 
+After the audit, verify the app's client-side sandbox decision without sending
+another XPC registration request:
+
+```sh
+bash Experiments/watchos27-device-face.sh boundary
+```
+
+This action reinstalls/launches WatchFaceLab but only queries its own sandbox
+and signed entitlements. It does not contact the collection server or mutate the
+face library.
+
 Follow [Docs/watchos27/DEVICE_SYSTEM_FACE_PROBE.md](Docs/watchos27/DEVICE_SYSTEM_FACE_PROBE.md)
 for the guarded `install`, `select`, and `rollback` stages. Each stage must emit
 a `SYSTEM_FACE_RESULT` record; a successful build or launch is not treated as a
@@ -181,7 +192,8 @@ The watchOS 27 device and watchOS simulator frameworks are **not interchangeable
 - [x] Argon internal unencrypted-bundle path identified statically
 - [x] ABI-gated physical `LibraryFaces` preflight/install/select/rollback probe implemented
 - [x] Physical preflight captured: XPC proxy present, `LibraryFaces` load timed out
-- [ ] Run the host-side system-boundary audit against matching DeviceSupport
+- [x] Host-side audit identified physical `nanotimekitd` and its service entitlements
+- [ ] Run the no-XPC WatchFaceLab sandbox boundary probe
 - [ ] Confirm loaded-image UUID and host behavior at runtime
 - [ ] Establish Argon executable-versus-resource payload type
 - [ ] Demonstrate trusted, durable system `ClockFace` registration

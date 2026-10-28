@@ -4,7 +4,10 @@
 
 #import <objc/message.h>
 #import <objc/runtime.h>
+#import <dlfcn.h>
+#import <errno.h>
 #import <string.h>
+#import <unistd.h>
 
 static NSString * const MYSystemBundleID =
     @"dev.develodom.WatchFaceLab.LocalFaceBundle";
@@ -15,6 +18,17 @@ static NSString * const MYPreviousUUIDKey =
 static NSDictionary *MYLastCollectionABI;
 static BOOL MYLastMutationABIMatches;
 static NSString *MYUUIDString(id value);
+
+// sandbox.h is intentionally not part of the watchOS SDK. Resolve the
+// read-only query dynamically and keep the private filter value local instead
+// of adding a private header dependency.
+typedef int (*MYSandboxCheckFunction)(pid_t, const char *, int, ...);
+typedef CFTypeRef (*MYSecTaskCreateFromSelfFunction)(CFAllocatorRef);
+typedef CFTypeRef (*MYSecTaskCopyValueForEntitlementFunction)(
+    CFTypeRef, CFStringRef, CFErrorRef *);
+static const int MYSandboxFilterGlobalName = 2;
+static NSString * const MYCollectionServerName =
+    @"com.apple.nanotimekit.collectionserver";
 
 static id MYSendObject(id receiver, SEL selector) {
     return ((id (*)(id, SEL))objc_msgSend)(receiver, selector);
@@ -61,6 +75,62 @@ static NSNumber *MYBoolIvar(id object, const char *name) {
     const uint8_t *bytes = (const uint8_t *)(__bridge const void *)(object);
     memcpy(&value, bytes + ivar_getOffset(ivar), sizeof(value));
     return @(value);
+}
+
+static NSDictionary *MYSandboxBoundaryDiagnostics(void) {
+    NSMutableDictionary *result = [NSMutableDictionary dictionary];
+    MYSandboxCheckFunction check = (MYSandboxCheckFunction)dlsym(
+        RTLD_DEFAULT, "sandbox_check");
+    result[@"apiPresent"] = @(check != NULL);
+    result[@"operation"] = @"mach-lookup";
+    result[@"globalName"] = MYCollectionServerName;
+    if (!check) return result;
+
+    errno = 0;
+    int rawResult = check(getpid(), "mach-lookup",
+        MYSandboxFilterGlobalName, MYCollectionServerName.UTF8String);
+    int savedErrno = errno;
+    result[@"rawResult"] = @(rawResult);
+    result[@"querySucceeded"] = @(rawResult >= 0);
+    result[@"allowed"] = @(rawResult == 0);
+    result[@"denied"] = @(rawResult > 0);
+    result[@"errno"] = @(savedErrno);
+    if (savedErrno != 0) {
+        result[@"errnoDescription"] =
+            [NSString stringWithUTF8String:strerror(savedErrno)] ?: @"unknown";
+    }
+    return result;
+}
+
+static NSDictionary *MYSignedEntitlementDiagnostics(void) {
+    NSMutableDictionary *result = [NSMutableDictionary dictionary];
+    MYSecTaskCreateFromSelfFunction createTask =
+        (MYSecTaskCreateFromSelfFunction)dlsym(RTLD_DEFAULT, "SecTaskCreateFromSelf");
+    MYSecTaskCopyValueForEntitlementFunction copyValue =
+        (MYSecTaskCopyValueForEntitlementFunction)dlsym(
+            RTLD_DEFAULT, "SecTaskCopyValueForEntitlement");
+    result[@"apiPresent"] = @(createTask != NULL && copyValue != NULL);
+    if (!createTask || !copyValue) return result;
+
+    CFTypeRef task = createTask(kCFAllocatorDefault);
+    result[@"taskPresent"] = @(task != NULL);
+    if (!task) return result;
+
+    NSArray<NSString *> *keys = @[
+        @"application-identifier",
+        @"com.apple.security.exception.mach-lookup.global-name",
+        @"com.apple.nanotimekit.replicator.library.entitlement",
+        @"com.apple.private.security.storage.NanoTimeKit.FaceSupport",
+        @"platform-application",
+    ];
+    NSMutableDictionary *values = [NSMutableDictionary dictionary];
+    for (NSString *key in keys) {
+        CFTypeRef value = copyValue(task, (__bridge CFStringRef)key, NULL);
+        values[key] = value ? CFBridgingRelease(value) : NSNull.null;
+    }
+    CFRelease(task);
+    result[@"values"] = values;
+    return result;
 }
 
 static NSDictionary *MYCurrentDeviceDiagnostics(void) {
@@ -348,6 +418,39 @@ static NSDictionary *MYCollectionSnapshot(id collection) {
     };
 }
 
+static BOOL MYSystemFaceBoundaryPreflightImpl(void) {
+    if (![NSThread isMainThread] ||
+        ![NSBundle.mainBundle.bundleIdentifier isEqualToString:@"dev.develodom.WatchFaceLab"]) {
+        MYLogResult(@"boundary", @{ @"pass": @NO,
+            @"error": @"unexpected host or thread" });
+        return NO;
+    }
+
+    NSDictionary *sandbox = MYSandboxBoundaryDiagnostics();
+    NSDictionary *entitlements = MYSignedEntitlementDiagnostics();
+    BOOL apiPresent = [sandbox[@"apiPresent"] boolValue];
+    BOOL querySucceeded = [sandbox[@"querySucceeded"] boolValue];
+    BOOL allowed = [sandbox[@"allowed"] boolValue];
+    NSString *error = nil;
+    if (!apiPresent) {
+        error = @"sandbox_check unavailable";
+    } else if (!querySucceeded) {
+        error = @"sandbox_check query failed";
+    } else if (!allowed) {
+        error = @"collection server Mach lookup denied by app sandbox";
+    }
+    NSMutableDictionary *record = [@{
+        @"pass": @(apiPresent && querySucceeded && allowed),
+        @"probeOnly": @YES,
+        @"xpcRequestSent": @NO,
+        @"sandbox": sandbox,
+        @"signedEntitlements": entitlements,
+    } mutableCopy];
+    if (error) record[@"error"] = error;
+    MYLogResult(@"boundary", record);
+    return apiPresent && querySucceeded && allowed;
+}
+
 static BOOL MYSystemFaceCollectionPreflightImpl(void) {
     id collection = MYLoadedCollection(NO);
     if (!collection) return NO;
@@ -532,6 +635,13 @@ __attribute__((visibility("default"))) BOOL MYSystemFaceCollectionPreflight(void
     MYLogProgress(@"preflight");
     return MYRunProtected(@"preflight", ^BOOL {
         return MYSystemFaceCollectionPreflightImpl();
+    });
+}
+
+__attribute__((visibility("default"))) BOOL MYSystemFaceBoundaryPreflight(void) {
+    MYLogProgress(@"boundary");
+    return MYRunProtected(@"boundary", ^BOOL {
+        return MYSystemFaceBoundaryPreflightImpl();
     });
 }
 

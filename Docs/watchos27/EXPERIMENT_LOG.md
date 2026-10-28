@@ -35,6 +35,8 @@ The log records **observed results** in chronological order. Exact times are app
 | 29 | First XPC-error preflight attempt | Launch reported success, but the result file retained the preceding run ID and timestamp | `--terminate-existing` did not guarantee a fresh watchOS process. The workflow now enumerates and force-terminates only WatchFaceLab by PID before passing a new action environment. |
 | 30 | Fresh XPC-registration preflight | Fresh run ID; all eight selector ABIs matched; `NSXPCConnection` and its proxy were present; registration was enqueued; no error callback arrived; `LibraryFaces` stayed unloaded with nil sequence/reference state until timeout | Stop repeating app preflights and do not mutate. The unresolved boundary is now system service identity, authorization, sandbox policy, or server-side filtering rather than selector ABI or message construction. |
 | 31 | Static system-boundary audit implementation | Added a host-only `audit` command for exact `ClockFace.app/ClockFace`, `nanotimekitd`, NanoTimeKit, FaceSupport components, signatures, entitlements, dependencies, and service-related strings | Results from the matching watchOS 27 DeviceSupport tree are pending; missing components are reported explicitly and are not confused with negative findings. |
+| 32 | Physical DeviceSupport system-boundary audit | `nanotimekitd` is present at `NanoTimeKit.framework/nanotimekitd`; strings include `NTKCollectionServer` and `runCollectionServer`; entitlements include collectionserver Mach lookup, FaceSupport storage, platform application, and library replicator; ClockFace is absent; ClockFaceSupport is present; launchd plist is absent | Confirms the physical daemon/service side and exposes a likely client sandbox boundary. The library-replicator entitlement is not yet proven to authorize persistent collection access. Missing ClockFace/plist data is a DeviceSupport limitation, not a runtime-absence claim. |
+| 33 | App sandbox boundary probe implementation | Added `boundary`, which checks WatchFaceLab's own sandbox decision and signed entitlement values without constructing an XPC connection or sending a request | Physical result pending. This distinguishes a Mach lookup denial from later collection-server filtering without another collection timeout. |
 
 ## Known useful console excerpts
 
@@ -76,8 +78,8 @@ cs_flags (0x26003301): valid hard kill enforcement require_lv dyld_platform plat
 
 ## Pending work
 
-Run the static system-boundary audit against matching DeviceSupport; verify the
-real `ClockFace` manager/gallery integration and signing/entitlements;
-FaceSupportServer authorization; evaluate whether any supported third-party
-executable face registration exists. Native persistent Pip-Boy system watchface
-has **not** been demonstrated.
+Run the app sandbox boundary probe. If Mach lookup is denied, stop app-side
+collection experiments; the remaining work is static analysis or an
+Apple-authorized system-host route. The real `ClockFace` binary remains absent
+from DeviceSupport. Native persistent Pip-Boy system watchface has **not** been
+demonstrated.

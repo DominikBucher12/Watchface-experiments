@@ -12,7 +12,7 @@ result_only=0
 usage() {
     printf '%s\n' \
         "usage: $0 [--device COREDEVICE-ID] [--build-only] [--check]" \
-        "          [--system-action preflight|install|select|rollback]" \
+        "          [--system-action boundary|preflight|install|select|rollback]" \
         "          [--result-only]" \
         "" \
         "Builds, signs, installs and launches the watchOS 27 experiment." \
@@ -79,7 +79,7 @@ while [[ $# -gt 0 ]]; do
             [[ $# -ge 2 ]] || fail '--system-action requires a value'
             system_action="$2"
             case "$system_action" in
-                preflight|install|select|rollback) ;;
+                boundary|preflight|install|select|rollback) ;;
                 *) fail "invalid system action: $system_action" ;;
             esac
             shift 2
