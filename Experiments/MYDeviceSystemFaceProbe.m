@@ -80,8 +80,18 @@ static NSDictionary *MYUniqueCustomFaceEntry(id collection) {
 static void MYLogResult(NSString *stage, NSDictionary *fields) {
     NSMutableDictionary *result = [NSMutableDictionary dictionaryWithDictionary:fields ?: @{}];
     result[@"stage"] = stage;
+    NSString *runID = NSProcessInfo.processInfo.environment[@"WATCHFACELAB_SYSTEM_RUN_ID"];
+    if (runID.length > 0) result[@"runID"] = runID;
     NSData *data = [NSJSONSerialization dataWithJSONObject:result options:0 error:nil];
     NSString *json = data ? [[NSString alloc] initWithData:data encoding:NSUTF8StringEncoding] : @"{}";
+    NSString *documents = NSSearchPathForDirectoriesInDomains(
+        NSDocumentDirectory, NSUserDomainMask, YES).firstObject;
+    NSError *writeError = nil;
+    NSString *resultPath = [documents stringByAppendingPathComponent:
+        @"WatchFaceLab-SystemFaceResult.json"];
+    if (!data || ![data writeToFile:resultPath options:NSDataWritingAtomic error:&writeError]) {
+        NSLog(@"SYSTEM_FACE_RESULT_WRITE_ERROR %@", writeError.localizedDescription ?: @"unknown");
+    }
     NSLog(@"SYSTEM_FACE_RESULT %@", json);
 }
 

@@ -147,19 +147,43 @@ xcrun devicectl device install app --device "$device_id" "$app_path"
 
 printf 'DEVICE_STEP=5/5 launch WatchFaceLab\n'
 if [[ -n "$system_action" ]]; then
-    set +e
+    system_run_id="$(date +%s)-$$-$system_action"
+    result_dir="$(mktemp -d /tmp/WatchFaceLab-SystemFaceResult.XXXXXX)"
+    result_file=""
     xcrun devicectl device process launch --device "$device_id" \
-        --environment-variables "{\"WATCHFACELAB_SYSTEM_ACTION\":\"$system_action\"}" \
-        --terminate-existing --console --timeout 20 \
+        --environment-variables "{\"WATCHFACELAB_SYSTEM_ACTION\":\"$system_action\",\"WATCHFACELAB_SYSTEM_RUN_ID\":\"$system_run_id\"}" \
+        --terminate-existing \
         dev.develodom.WatchFaceLab
-    console_status=$?
-    set -e
-    printf 'DEVICE_CONSOLE_STATUS=%s (timeout after capture is expected)\n' "$console_status"
-    if [[ "$console_status" == "0" ]]; then
-        launch_result='PASS'
-    else
-        launch_result='CHECK_CONSOLE'
+    printf 'DEVICE_RESULT_WAIT run=%s (up to 25 seconds)\n' "$system_run_id"
+    result_deadline=$((SECONDS + 25))
+    attempt=0
+    while (( SECONDS < result_deadline )); do
+        attempt=$((attempt + 1))
+        candidate="$result_dir/result-$attempt.json"
+        set +e
+        xcrun devicectl device copy from --device "$device_id" \
+            --domain-type appDataContainer \
+            --domain-identifier dev.develodom.WatchFaceLab \
+            --source Documents/WatchFaceLab-SystemFaceResult.json \
+            --destination "$candidate" --quiet --timeout 3 \
+            >/dev/null 2>&1
+        copy_status=$?
+        set -e
+        if [[ "$copy_status" == "0" && -f "$candidate" ]] &&
+            grep -Fq "\"runID\":\"$system_run_id\"" "$candidate"; then
+            result_file="$candidate"
+            break
+        fi
+        sleep 1
+    done
+    if [[ -z "$result_file" ]]; then
+        printf 'DEVICE_RESULT_CAPTURE=FAIL TEMP=%s\n' "$result_dir"
+        fail 'the app launched, but no matching system-face result was copied from its data container'
     fi
+    result_json="$(<"$result_file")"
+    printf 'SYSTEM_FACE_RESULT %s\n' "$result_json"
+    printf 'DEVICE_RESULT_CAPTURE=PASS TEMP=%s\n' "$result_dir"
+    launch_result='PASS'
 else
     xcrun devicectl device process launch --device "$device_id" \
         --terminate-existing dev.develodom.WatchFaceLab
@@ -169,4 +193,4 @@ fi
 printf '%s\n' \
     "DEVICE_LAUNCH=$launch_result" \
     "SYSTEM_ACTION=${system_action:-none}" \
-    'Inspect the WatchFaceLab device console for SYSTEM_FACE_RESULT.'
+    'The SYSTEM_FACE_RESULT line above is the authoritative probe result.'

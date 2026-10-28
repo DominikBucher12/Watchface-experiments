@@ -2,8 +2,9 @@
 
 This staged experiment tests the production watchOS `LibraryFaces` collection
 from the signed WatchFaceLab process. It does not claim success from build,
-installation, or process launch alone. Every stage emits a
-`SYSTEM_FACE_RESULT` JSON record to the device console.
+installation, or process launch alone. Every stage atomically writes a
+`SYSTEM_FACE_RESULT` JSON record to its app data container; the bootstrap copies
+that file back and prints it on the Mac.
 
 ## Stages
 
@@ -63,5 +64,6 @@ bash Experiments/bootstrap-watchos27-device.sh --system-action rollback
 - successful selection plus visible Pip-Boy after leaving WatchFaceLab is the
   required system-level result.
 
-The console attachment lasts 20 seconds. A timeout status after the JSON record
-is expected because a watchOS app normally remains running.
+The bootstrap gives the probe up to 25 seconds, rejects stale result files using
+a per-run identifier, and fails when it cannot copy a matching JSON record from
+the app data container.

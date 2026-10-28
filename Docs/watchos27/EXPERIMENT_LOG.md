@@ -24,6 +24,7 @@ The log records **observed results** in chronological order. Exact times are app
 | 18 | Read sysdiagnose process list | `/Applications/ClockFace.app/ClockFace`, PID 198, bundle `com.apple.clockface`; platform signing flags | Actual system process path identified and library-validation enforcement observed. |
 | 19 | Real ClockFace binary audit | Command prepared, user result **pending** | No findings to record yet. |
 | 20 | Physical `LibraryFaces` collection probe implementation | ABI-gated preflight/install/select/rollback exports compile and package as arm64; device execution pending | Build success is not collection-server acceptance. Await `SYSTEM_FACE_RESULT` from the watchOS 27 device. |
+| 21 | First physical preflight launch | Xcode 27/watchOS 27.0.1 build, signing, install and launch passed; `devicectl --console` waited until timeout without relaying the app's result | No collection conclusion. Result transport changed to a run-ID-gated file copied from the app data container. |
 
 ## Known useful console excerpts
 

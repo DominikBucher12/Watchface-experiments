@@ -49,8 +49,9 @@ bash Experiments/bootstrap-watchos27-device.sh --system-action preflight
 ```
 
 Then follow [`Docs/watchos27/DEVICE_SYSTEM_FACE_PROBE.md`](../Docs/watchos27/DEVICE_SYSTEM_FACE_PROBE.md).
-The bootstrap attaches the device console briefly and prints the authoritative
-`SYSTEM_FACE_RESULT` record.
+The bootstrap copies the result from the app data container and prints the
+authoritative `SYSTEM_FACE_RESULT` record. This avoids relying on watchOS unified
+logging being relayed through `devicectl --console`.
 
 Manual framework builds remain available. Explicit paths override automatic
 DeviceSupport discovery:
