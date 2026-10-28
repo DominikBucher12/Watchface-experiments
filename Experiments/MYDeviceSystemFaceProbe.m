@@ -117,6 +117,53 @@ static NSDictionary *MYCollectionDiagnostics(id collection) {
     return result;
 }
 
+// Repeats only the collection registration request already issued by the
+// framework, but supplies an error handler we control. Registration loads
+// state; it does not add, remove, reorder, or select a face.
+static NSDictionary *MYXPCRegistrationErrorProbe(id collection) {
+    id connection = MYObjectIvar(collection, "_connection");
+    SEL proxySelector = sel_registerName("remoteObjectProxyWithErrorHandler:");
+    NSMutableDictionary *result = [NSMutableDictionary dictionary];
+    result[@"connectionPresent"] = @(connection != nil);
+    result[@"proxyEncoding"] = connection ?
+        MYEncoding([connection class], proxySelector) : @"missing";
+    if (!connection || ![connection respondsToSelector:proxySelector]) {
+        result[@"sent"] = @NO;
+        result[@"error"] = @"error-handler proxy unavailable";
+        return result;
+    }
+
+    __block NSDictionary *capturedError = nil;
+    void (^errorHandler)(NSError *) = ^(NSError *error) {
+        capturedError = @{
+            @"domain": error.domain ?: @"unknown",
+            @"code": @(error.code),
+            @"description": error.localizedDescription ?: @"unknown",
+        };
+    };
+    id proxy = ((id (*)(id, SEL, id))objc_msgSend)(
+        connection, proxySelector, errorHandler);
+    SEL collectionIdentifier = sel_registerName("collectionIdentifier");
+    SEL deviceUUID = sel_registerName("deviceUUID");
+    id identifier = MYSendObject(collection, collectionIdentifier);
+    id uuid = MYSendObject(collection, deviceUUID);
+    id seqID = MYObjectIvar(collection, "_seqId");
+    SEL registerSelector = sel_registerName(
+        "registerForCollectionIdentifier:deviceUUID:withSeqId:");
+    if (!proxy || !identifier) {
+        result[@"sent"] = @NO;
+        result[@"error"] = @"registration proxy or identifier unavailable";
+        return result;
+    }
+    ((void (*)(id, SEL, id, id, id))objc_msgSend)(
+        proxy, registerSelector, identifier, uuid, seqID);
+    result[@"sent"] = @YES;
+    MYWaitUntil(^BOOL { return capturedError != nil; }, 3.0);
+    result[@"errorReceived"] = @(capturedError != nil);
+    if (capturedError) result[@"xpcError"] = capturedError;
+    return result;
+}
+
 static NSString *MYFaceBundleIdentifier(id face) {
     SEL selector = sel_registerName("bundleIdentifier");
     return [face respondsToSelector:selector] ? MYSendObject(face, selector) : nil;
@@ -232,6 +279,10 @@ static id MYLoadedCollection(BOOL requireMutationABI) {
     NSDictionary *deviceState = MYCurrentDeviceDiagnostics();
     if (!MYWaitUntil(^BOOL { return MYSendBool(collection, loaded); }, 12.0)) {
         NSDictionary *timeoutState = MYCollectionDiagnostics(collection);
+        NSDictionary *xpcRegistrationProbe = MYXPCRegistrationErrorProbe(collection);
+        if (MYWaitUntil(^BOOL { return MYSendBool(collection, loaded); }, 5.0)) {
+            return collection;
+        }
         BOOL retryAttempted = NO;
         if ([timeoutState[@"registrationNeeded"] boolValue] &&
             [MYEncoding(concrete, sel_registerName("_registerIfNeeded")) isEqualToString:@"v16@0:8"]) {
@@ -247,6 +298,7 @@ static id MYLoadedCollection(BOOL requireMutationABI) {
             @"timeoutState": timeoutState,
             @"finalState": MYCollectionDiagnostics(collection),
             @"deviceState": deviceState,
+            @"xpcRegistrationProbe": xpcRegistrationProbe,
             @"retryAttempted": @(retryAttempted),
             @"registerIfNeededEncoding": MYEncoding(concrete,
                 sel_registerName("_registerIfNeeded")) });

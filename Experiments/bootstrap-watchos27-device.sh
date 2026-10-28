@@ -258,25 +258,36 @@ if [[ -n "$system_action" ]]; then
             diagnostic_copy_status=0
             diagnostic_json="$(<"$diagnostic_file")"
             printf 'SYSTEM_FACE_DIAGNOSTIC %s\n' "$diagnostic_json"
+            diagnostic_run_id="$(plutil -extract runID raw -o - \
+                "$diagnostic_file" 2>/dev/null || true)"
+            diagnostic_complete="$(plutil -extract complete raw -o - \
+                "$diagnostic_file" 2>/dev/null || true)"
+            if [[ "$diagnostic_run_id" == "$system_run_id" ]]; then
+                case "$diagnostic_complete" in
+                    true|YES|1) result_file="$diagnostic_file" ;;
+                esac
+            fi
         else
             diagnostic_copy_status=$?
         fi
         printf 'DEVICE_RESULT_DIAGNOSTIC_COPY_END status=%s\n' "$diagnostic_copy_status"
-        if [[ -n "$progress_file" ]]; then
-            progress_json="$(<"$progress_file")"
-            printf 'SYSTEM_FACE_PROGRESS %s\n' "$progress_json"
+        if [[ -z "$result_file" ]]; then
+            if [[ -n "$progress_file" ]]; then
+                progress_json="$(<"$progress_file")"
+                printf 'SYSTEM_FACE_PROGRESS %s\n' "$progress_json"
+            fi
+            printf 'DEVICE_RESULT_CAPTURE=FAIL TEMP=%s\n' "$result_dir"
+            printf 'DEVICE_CONTAINER_DOCUMENTS_BEGIN\n'
+            set +e
+            xcrun devicectl device info files --device "$device_id" \
+                --domain-type appDataContainer \
+                --domain-identifier dev.develodom.WatchFaceLab \
+                --subdirectory Documents --no-recurse --timeout 10
+            container_status=$?
+            set -e
+            printf 'DEVICE_CONTAINER_DOCUMENTS_END status=%s\n' "$container_status"
+            fail 'the app launched, but no matching system-face result was copied from its data container'
         fi
-        printf 'DEVICE_RESULT_CAPTURE=FAIL TEMP=%s\n' "$result_dir"
-        printf 'DEVICE_CONTAINER_DOCUMENTS_BEGIN\n'
-        set +e
-        xcrun devicectl device info files --device "$device_id" \
-            --domain-type appDataContainer \
-            --domain-identifier dev.develodom.WatchFaceLab \
-            --subdirectory Documents --no-recurse --timeout 10
-        container_status=$?
-        set -e
-        printf 'DEVICE_CONTAINER_DOCUMENTS_END status=%s\n' "$container_status"
-        fail 'the app launched, but no matching system-face result was copied from its data container'
     fi
     result_json="$(<"$result_file")"
     printf 'SYSTEM_FACE_RESULT %s\n' "$result_json"

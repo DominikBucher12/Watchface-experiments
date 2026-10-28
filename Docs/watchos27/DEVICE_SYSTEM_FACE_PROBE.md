@@ -20,6 +20,8 @@ for its XPC-backed state, records selector encodings, the selected UUID and
 bundle identifiers, and performs no mutation. On load timeout it also records
 the connection, registration flag, reference collection state, current
 `CLKDevice`, and one `_registerIfNeeded` retry when requested by the collection.
+It also repeats the same non-mutating registration through a dedicated XPC error
+handler after a timeout, so an explicit service rejection can be recorded.
 Continue only when its JSON says `"pass":true`.
 
 ```sh

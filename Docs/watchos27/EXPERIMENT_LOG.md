@@ -31,6 +31,7 @@ The log records **observed results** in chronological order. Exact times are app
 | 25 | Device workflow simplification | Added stable `watchos27-device-face.sh` entry point with automatic physical-Watch selection and `result`/`preflight`/`install`/`select`/`rollback` commands | Future iterations update one script; `result` retrieves the existing JSON without rebuilding, launching, or mutating. |
 | 26 | First convenience `result` fetch | CoreDevice error 7000 / RemoteServices 11001: destination path was an existing directory and could not be opened as a file | Corrected receive target to a concrete file with an existing parent; added relative/root-relative source fallback and property-list JSON validation. |
 | 27 | First recovered physical preflight result | All eight collection selector encodings match the expected ABI; `sharedLibraryCollection` remained `hasLoaded=false` for 12 seconds | Do not mutate. Expanded preflight to report connection/registration/reference/device state and perform one read-only `_registerIfNeeded` retry only when the collection requests it. |
+| 28 | Expanded physical preflight result | `NSXPCConnection` exists; registration flag stays false; sequence ID and reference collection stay nil; current `CLKDevice` exists; no state changed from initial through timeout | Registration was issued but produced no callback or interruption. Added a duplicate read-only registration with a dedicated XPC error handler to test the service-authorization boundary. |
 
 ## Known useful console excerpts
 
