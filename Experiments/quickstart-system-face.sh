@@ -83,8 +83,11 @@ if [[ "$device_line" != *Booted* ]]; then
 fi
 
 say "Building the face and preparing a hybrid runtime overlay"
-prepare_output="$(bash "$driver" prepare "$simulator_udid")"
-printf '%s\n' "$prepare_output"
+prepare_log="${WATCHFACELAB_PREPARE_LOG:-/tmp/WatchFaceLab-prepare-$simulator_udid.log}"
+if ! bash "$driver" prepare "$simulator_udid" 2>&1 | tee "$prepare_log"; then
+    fail "prepare failed; full output is saved in $prepare_log"
+fi
+prepare_output="$(<"$prepare_log")"
 overlay_root="$(sed -n 's/^OVERLAY_ROOT=//p' <<<"$prepare_output" | tail -1)"
 [[ -n "$overlay_root" && -d "$overlay_root" ]] ||
     fail "prepare did not return a usable overlay"

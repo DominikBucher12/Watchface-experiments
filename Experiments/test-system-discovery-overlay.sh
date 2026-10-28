@@ -59,13 +59,17 @@ link_children_except() {
 
 case "$action" in
     prepare)
+        printf 'PREPARE_STEP=1/3 resolve simulator runtime\n'
         runtime="$(runtime_root)"
         if [[ -z "$runtime" || ! -d "$runtime/System/Library/NanoTimeKit/FaceBundles" ]]; then
             printf 'ERROR: face bundle root unavailable for %s\n' "$runtime" >&2
             exit 67
         fi
+        printf 'PREPARE_RUNTIME=%s\n' "$runtime"
+        printf 'PREPARE_STEP=2/3 build loader artifacts\n'
         WATCH_RUNTIME_ROOT="$runtime" \
             bash "$experiments_dir/build-system-loader.sh" "$build_root"
+        printf 'PREPARE_STEP=3/3 clone face bundles into temporary overlay\n'
         overlay_root="$(mktemp -d /tmp/WatchFaceLabSystemRoot.XXXXXX)"
         overlay_faces="$overlay_root/System/Library/NanoTimeKit/FaceBundles"
         # IPHONE_SIMULATOR_ROOT affects framework/resource lookup process-wide,
