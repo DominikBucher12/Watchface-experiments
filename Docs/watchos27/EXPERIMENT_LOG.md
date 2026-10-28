@@ -25,6 +25,7 @@ The log records **observed results** in chronological order. Exact times are app
 | 19 | Real ClockFace binary audit | Command prepared, user result **pending** | No findings to record yet. |
 | 20 | Physical `LibraryFaces` collection probe implementation | ABI-gated preflight/install/select/rollback exports compile and package as arm64; device execution pending | Build success is not collection-server acceptance. Await `SYSTEM_FACE_RESULT` from the watchOS 27 device. |
 | 21 | First physical preflight launch | Xcode 27/watchOS 27.0.1 build, signing, install and launch passed; `devicectl --console` waited until timeout without relaying the app's result | No collection conclusion. Result transport changed to a run-ID-gated file copied from the app data container. |
+| 22 | Second physical preflight launch | Build/install/launch passed; no matching result was copied from the app container within 25 seconds | No collection conclusion. Added Swift/framework progress milestones and container listing to distinguish execution stalls from file-transfer failure. |
 
 ## Known useful console excerpts
 

@@ -66,4 +66,6 @@ bash Experiments/bootstrap-watchos27-device.sh --system-action rollback
 
 The bootstrap gives the probe up to 25 seconds, rejects stale result files using
 a per-run identifier, and fails when it cannot copy a matching JSON record from
-the app data container.
+the app data container. On timeout it prints the latest `SYSTEM_FACE_PROGRESS`
+milestone and lists the app's `Documents` directory, distinguishing a launch,
+framework-load, private-probe, or file-transfer failure.

@@ -77,9 +77,10 @@ static NSDictionary *MYUniqueCustomFaceEntry(id collection) {
     return matches.count == 1 ? matches.firstObject : nil;
 }
 
-static void MYLogResult(NSString *stage, NSDictionary *fields) {
+static void MYWriteRecord(NSString *stage, NSDictionary *fields, BOOL complete) {
     NSMutableDictionary *result = [NSMutableDictionary dictionaryWithDictionary:fields ?: @{}];
     result[@"stage"] = stage;
+    result[@"complete"] = @(complete);
     NSString *runID = NSProcessInfo.processInfo.environment[@"WATCHFACELAB_SYSTEM_RUN_ID"];
     if (runID.length > 0) result[@"runID"] = runID;
     NSData *data = [NSJSONSerialization dataWithJSONObject:result options:0 error:nil];
@@ -92,7 +93,15 @@ static void MYLogResult(NSString *stage, NSDictionary *fields) {
     if (!data || ![data writeToFile:resultPath options:NSDataWritingAtomic error:&writeError]) {
         NSLog(@"SYSTEM_FACE_RESULT_WRITE_ERROR %@", writeError.localizedDescription ?: @"unknown");
     }
-    NSLog(@"SYSTEM_FACE_RESULT %@", json);
+    NSLog(complete ? @"SYSTEM_FACE_RESULT %@" : @"SYSTEM_FACE_PROGRESS %@", json);
+}
+
+static void MYLogResult(NSString *stage, NSDictionary *fields) {
+    MYWriteRecord(stage, fields, YES);
+}
+
+static void MYLogProgress(NSString *action) {
+    MYWriteRecord(@"probe-entered", @{ @"action": action }, NO);
 }
 
 static id MYLoadedCollection(BOOL requireMutationABI) {
@@ -377,24 +386,28 @@ static BOOL MYRunProtected(NSString *stage, BOOL (^operation)(void)) {
 }
 
 __attribute__((visibility("default"))) BOOL MYSystemFaceCollectionPreflight(void) {
+    MYLogProgress(@"preflight");
     return MYRunProtected(@"preflight", ^BOOL {
         return MYSystemFaceCollectionPreflightImpl();
     });
 }
 
 __attribute__((visibility("default"))) BOOL MYSystemFaceInstallCandidate(NSString *directoryPath) {
+    MYLogProgress(@"install");
     return MYRunProtected(@"install", ^BOOL {
         return MYSystemFaceInstallCandidateImpl(directoryPath);
     });
 }
 
 __attribute__((visibility("default"))) BOOL MYSystemFaceSelectCandidate(void) {
+    MYLogProgress(@"select");
     return MYRunProtected(@"select", ^BOOL {
         return MYSystemFaceSelectCandidateImpl();
     });
 }
 
 __attribute__((visibility("default"))) BOOL MYSystemFaceRollbackCandidate(void) {
+    MYLogProgress(@"rollback");
     return MYRunProtected(@"rollback", ^BOOL {
         return MYSystemFaceRollbackCandidateImpl();
     });

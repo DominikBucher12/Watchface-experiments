@@ -13,6 +13,37 @@ enum CustomFaceLoader {
     private static var didPresent = false
     private static var didRunSystemAction = false
 
+    private static func writeSystemActionRecord(
+        action: String,
+        stage: String,
+        complete: Bool,
+        pass: Bool? = nil,
+        error: String? = nil
+    ) {
+        guard let runID = ProcessInfo.processInfo.environment["WATCHFACELAB_SYSTEM_RUN_ID"],
+              let documents = FileManager.default.urls(
+                for: .documentDirectory,
+                in: .userDomainMask
+              ).first else { return }
+        var record: [String: Any] = [
+            "action": action,
+            "stage": stage,
+            "runID": runID,
+            "complete": complete,
+        ]
+        if let pass { record["pass"] = pass }
+        if let error { record["error"] = error }
+        do {
+            let data = try JSONSerialization.data(withJSONObject: record)
+            try data.write(
+                to: documents.appendingPathComponent("WatchFaceLab-SystemFaceResult.json"),
+                options: .atomic
+            )
+        } catch {
+            print("SYSTEM_FACE_RESULT_WRITE_ERROR \(error)")
+        }
+    }
+
     private static func loadExperimentFramework() -> UnsafeMutableRawPointer? {
         guard let frameworksURL = Bundle.main.privateFrameworksURL else {
             print("WatchFaceLab: Frameworks directory unavailable")
@@ -35,7 +66,17 @@ enum CustomFaceLoader {
               !action.isEmpty else { return false }
         guard !didRunSystemAction else { return true }
         didRunSystemAction = true
-        guard let handle = loadExperimentFramework() else { return true }
+        writeSystemActionRecord(action: action, stage: "swift-start", complete: false)
+        guard let handle = loadExperimentFramework() else {
+            writeSystemActionRecord(
+                action: action,
+                stage: "framework-load",
+                complete: true,
+                pass: false,
+                error: "experiment framework could not be loaded"
+            )
+            return true
+        }
 
         let noArgumentSymbols = [
             "preflight": "MYSystemFaceCollectionPreflight",
@@ -60,6 +101,13 @@ enum CustomFaceLoader {
             return true
         }
         print("SYSTEM_FACE_ACTION action=\(action) result=missing-export-or-unknown-action")
+        writeSystemActionRecord(
+            action: action,
+            stage: "symbol-lookup",
+            complete: true,
+            pass: false,
+            error: "missing export or unknown action"
+        )
         return true
     }
 

@@ -150,6 +150,7 @@ if [[ -n "$system_action" ]]; then
     system_run_id="$(date +%s)-$$-$system_action"
     result_dir="$(mktemp -d /tmp/WatchFaceLab-SystemFaceResult.XXXXXX)"
     result_file=""
+    progress_file=""
     xcrun devicectl device process launch --device "$device_id" \
         --environment-variables "{\"WATCHFACELAB_SYSTEM_ACTION\":\"$system_action\",\"WATCHFACELAB_SYSTEM_RUN_ID\":\"$system_run_id\"}" \
         --terminate-existing \
@@ -169,15 +170,34 @@ if [[ -n "$system_action" ]]; then
             >/dev/null 2>&1
         copy_status=$?
         set -e
-        if [[ "$copy_status" == "0" && -f "$candidate" ]] &&
-            grep -Fq "\"runID\":\"$system_run_id\"" "$candidate"; then
-            result_file="$candidate"
-            break
+        if [[ "$copy_status" == "0" ]]; then
+            copied_file="$(find "$candidate" -type f -print -quit 2>/dev/null || true)"
+            if [[ -n "$copied_file" ]] &&
+                grep -Fq "\"runID\":\"$system_run_id\"" "$copied_file"; then
+                progress_file="$copied_file"
+                if grep -Fq '"complete":true' "$copied_file"; then
+                    result_file="$copied_file"
+                    break
+                fi
+            fi
         fi
         sleep 1
     done
     if [[ -z "$result_file" ]]; then
+        if [[ -n "$progress_file" ]]; then
+            progress_json="$(<"$progress_file")"
+            printf 'SYSTEM_FACE_PROGRESS %s\n' "$progress_json"
+        fi
         printf 'DEVICE_RESULT_CAPTURE=FAIL TEMP=%s\n' "$result_dir"
+        printf 'DEVICE_CONTAINER_DOCUMENTS_BEGIN\n'
+        set +e
+        xcrun devicectl device info files --device "$device_id" \
+            --domain-type appDataContainer \
+            --domain-identifier dev.develodom.WatchFaceLab \
+            --subdirectory Documents --no-recurse --timeout 10
+        container_status=$?
+        set -e
+        printf 'DEVICE_CONTAINER_DOCUMENTS_END status=%s\n' "$container_status"
         fail 'the app launched, but no matching system-face result was copied from its data container'
     fi
     result_json="$(<"$result_file")"
