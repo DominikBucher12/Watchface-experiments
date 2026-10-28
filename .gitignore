@@ -62,6 +62,7 @@ Experiments/ClockFaceLab/Analysis/*.asm.txt
 *~
 .env
 .env.*
+*.before-*
 
 # Historical root-level scratch dumps
 /another.txt
@@ -71,3 +72,4 @@ Experiments/ClockFaceLab/Analysis/*.asm.txt
 /mrdka2.txt
 /mrdka3.txt
 /picovina.txt
+/sracka.sh
