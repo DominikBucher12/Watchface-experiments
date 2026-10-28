@@ -193,7 +193,7 @@ The watchOS 27 device and watchOS simulator frameworks are **not interchangeable
 - [x] ABI-gated physical `LibraryFaces` preflight/install/select/rollback probe implemented
 - [x] Physical preflight captured: XPC proxy present, `LibraryFaces` load timed out
 - [x] Host-side audit identified physical `nanotimekitd` and its service entitlements
-- [ ] Run the no-XPC WatchFaceLab sandbox boundary probe
+- [x] No-XPC boundary probe confirmed collection-server Mach lookup denial
 - [ ] Confirm loaded-image UUID and host behavior at runtime
 - [ ] Establish Argon executable-versus-resource payload type
 - [ ] Demonstrate trusted, durable system `ClockFace` registration

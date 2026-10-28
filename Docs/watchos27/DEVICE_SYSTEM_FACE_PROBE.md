@@ -62,6 +62,13 @@ bash Experiments/watchos27-device-face.sh boundary
 collection-server Mach name, and reads only WatchFaceLab's own signed
 entitlements. Its JSON explicitly records `"xpcRequestSent":false`.
 
+The physical result was conclusive: the query succeeded but returned
+`rawResult=1`, `denied=true`, and `allowed=false`. WatchFaceLab's signed value
+for the Mach-lookup entitlement was null, as were the FaceSupport storage,
+library-replicator, and platform-application entitlements. No XPC request was
+sent. The `install` and `select` stages below are retained as documented guarded
+research code, but must not be run on this stock-device path.
+
 ```sh
 bash Experiments/watchos27-device-face.sh install
 ```

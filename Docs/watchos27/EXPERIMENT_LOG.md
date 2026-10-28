@@ -38,6 +38,7 @@ The log records **observed results** in chronological order. Exact times are app
 | 32 | Physical DeviceSupport system-boundary audit | `nanotimekitd` is present at `NanoTimeKit.framework/nanotimekitd`; strings include `NTKCollectionServer` and `runCollectionServer`; entitlements include collectionserver Mach lookup, FaceSupport storage, platform application, and library replicator; ClockFace is absent; ClockFaceSupport is present; launchd plist is absent | Confirms the physical daemon/service side and exposes a likely client sandbox boundary. The library-replicator entitlement is not yet proven to authorize persistent collection access. Missing ClockFace/plist data is a DeviceSupport limitation, not a runtime-absence claim. |
 | 33 | App sandbox boundary probe implementation | Added `boundary`, which checks WatchFaceLab's own sandbox decision and signed entitlement values without constructing an XPC connection or sending a request | Physical result pending. This distinguishes a Mach lookup denial from later collection-server filtering without another collection timeout. |
 | 34 | First boundary launch | Build, signing, installation, and CoreDevice launch returned success, but the app container retained the older `install` result and no fresh `swift-start` record appeared | No sandbox conclusion. SwiftUI never reported an active scene. The action now runs from the app initializer, and the bootstrap records whether WatchFaceLab has a PID one second after launch. |
+| 35 | Fresh app sandbox boundary result | WatchFaceLab ran as PID 6716; `sandbox_check` for `mach-lookup` of `com.apple.nanotimekit.collectionserver` completed with `rawResult=1`, `denied=true`, `allowed=false`; the app's signed Mach-lookup, FaceSupport storage, library-replicator, and platform-application entitlements were all absent; `xpcRequestSent=false` | The normal third-party watchOS app path is blocked before collection-server authorization. Do not repeat collection preflights or mutations. Persisting the custom executable renderer now requires a platform-authorized system distribution/host route or a modified research OS. |
 
 ## Known useful console excerpts
 
@@ -79,8 +80,11 @@ cs_flags (0x26003301): valid hard kill enforcement require_lv dyld_platform plat
 
 ## Pending work
 
-Run the app sandbox boundary probe. If Mach lookup is denied, stop app-side
-collection experiments; the remaining work is static analysis or an
-Apple-authorized system-host route. The real `ClockFace` binary remains absent
-from DeviceSupport. Native persistent Pip-Boy system watchface has **not** been
-demonstrated.
+App-side collection experiments are closed by the confirmed Mach-lookup denial.
+The supported `.watchface` API imports configurations of available system faces;
+it does not install an app-defined executable renderer. The practical stock
+device alternative is an existing system face carrying a Pip-Boy-styled
+WidgetKit complication. A full custom native renderer requires an
+Apple-authorized system-host/distribution route or a modified research OS. The
+real `ClockFace` binary remains absent from DeviceSupport. Native persistent
+Pip-Boy system watchface has **not** been demonstrated.

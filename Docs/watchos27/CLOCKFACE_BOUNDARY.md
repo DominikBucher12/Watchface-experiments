@@ -38,6 +38,7 @@ This is an **accessibility bundle**, **not** `/Applications/ClockFace.app/ClockF
 | Load app-local `MYLocalFaceBundle.bundle` | **Verified** | Not tested |
 | Return app bundle from `NTKFaceBundleManager` via temporary manager subclass | **Verified** | Not tested |
 | Read `/var/mobile/.../ExtractedBundles/24R365` | **Denied (`EPERM`)** | Permissions not examined |
+| Look up `com.apple.nanotimekit.collectionserver` | **Denied by sandbox** | System client owns the service path |
 | Persist custom native face as the watch's actual selected face | **Not achieved** | Not achieved |
 
 The app-process manager experiment uses `object_setClass` only for its own `NTKFaceBundleManager` instance. It does **not** alter the separately running `ClockFace` process or system filesystem. `OWNED27 RESTORED class=1 absent=1` confirmed the custom identity was absent after restoring the manager's original class.
@@ -57,4 +58,9 @@ No kernel modifications, jailbreak, entitlement spoofing, system app patching, o
 
 ## Last observed checkpoint
 
-The user was about to run a device-symbol path/entitlement audit for `/Applications/ClockFace.app/ClockFace` and `ClockFaceSupport.framework`. Results of **that** audit have **not** yet been supplied, and should not be marked verified.
+The physical DeviceSupport audit found `nanotimekitd`, its collection-server
+strings and private entitlements, plus `ClockFaceSupport.framework`; the exact
+`ClockFace.app/ClockFace` image was absent from that symbol set. A subsequent
+on-device self-query conclusively denied WatchFaceLab Mach lookup of the
+collection server without sending an XPC request. This closes the normally
+signed app-to-daemon route; it does not identify a bypass.

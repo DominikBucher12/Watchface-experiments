@@ -19,6 +19,7 @@ Render a custom Pip-Boy-inspired native `NTKFace` / `NTKFaceView`, then determin
 | `NTKFaceBundleManager` returns and enumerates our bundle via ephemeral subclass | **PASS** | **Only WatchFaceLab**, manager restored afterward |
 | Argon classes and Objective-C method signatures inspected | **PASS** | Read-only process introspection |
 | Argon extracted-directory access | **DENIED (`EPERM`)** | WatchFaceLab sandbox |
+| Collection-server Mach lookup | **DENIED** | Fresh on-device `sandbox_check`; no XPC request sent |
 | Descriptor enumeration result | **NOT PROVEN** | Logs showed directory errors; no complete descriptor result |
 | Discovery/registration by actual `ClockFace` | **NOT PROVEN** | Separate Apple platform process |
 | Pip-Boy survives exiting WatchFaceLab as native system face | **NOT ACHIEVED** | Original objective |
@@ -49,6 +50,8 @@ the connection before installation.
 - [DEVICE_SYSTEM_FACE_PROBE.md](DEVICE_SYSTEM_FACE_PROBE.md) — staged, ABI-gated
   `LibraryFaces` preflight/install/select/rollback experiment for a physical
   Watch, with device-console evidence requirements.
+- [ALTERNATIVE_ROUTES.md](ALTERNATIVE_ROUTES.md) — supported complication plus
+  `.watchface` route versus requirements for a full custom native renderer.
 
 ## Key terminology
 

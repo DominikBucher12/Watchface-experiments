@@ -18,7 +18,7 @@
 | Native gallery UI suitability for isolated collection | Read-only audit complete; factory owns collection delegation and exposes add-face callbacks; not a passive browser |
 | System gallery visibility | Not established |
 | Persistent installation/selection/restoration | Not attempted |
-| nanotimekitd collection-server static trace | Storage/reconstruction mapped; listener accepts at method level; Mach-service, registration, and operation authorization unresolved |
+| nanotimekitd collection-server boundary | Storage/reconstruction mapped; physical WatchFaceLab is denied Mach lookup before server registration |
 
 Owned-app milestone passed in PID 10520: baseline 58 bundles, one custom bundle,
 native gallery consumption, and original class/enumeration/absent lookup restored.
@@ -62,3 +62,10 @@ bundle used in the owned-app tests is not shown to be loadable by nanotimekitd.
 See [SYSTEM-PERSISTENCE.md](SYSTEM-PERSISTENCE.md). Keep remaining investigation
 read-only: do not modify the runtime or send add/remove/select requests. The
 original host debugger restriction remains an independent integration limit.
+
+The physical watchOS 27 boundary probe later resolved the app-side question:
+WatchFaceLab's own `sandbox_check` denied Mach lookup of
+`com.apple.nanotimekit.collectionserver`, and its signed entitlement values for
+that exception, FaceSupport storage, library replication, and platform status
+were absent. The daemon's method-level accept behavior is therefore unreachable
+from this normally signed app and is not a usable registration vulnerability.
