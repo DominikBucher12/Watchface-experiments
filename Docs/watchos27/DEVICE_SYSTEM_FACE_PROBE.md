@@ -83,6 +83,11 @@ record into a concrete local file whose parent directory already exists. The
 downloader accepts both relative and root-relative remote paths and prints any
 JSON recovered by its failure path.
 
+Before an action launch, the bootstrap enumerates device processes and
+force-terminates only a running `WatchFaceLab` PID. This is required because
+watchOS did not reliably honor `devicectl --terminate-existing`; reusing the old
+process also reused its environment and one-shot action guard.
+
 Transient CoreDevice disconnects during the idempotent app-install step are
 retried up to three times. The bootstrap deliberately does not retry launch or
 any collection mutation automatically, because their completion may be

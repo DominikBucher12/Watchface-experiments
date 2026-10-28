@@ -222,13 +222,32 @@ done
 
 printf 'DEVICE_STEP=5/5 launch WatchFaceLab\n'
 if [[ -n "$system_action" ]]; then
+    set +e
+    process_table="$(xcrun devicectl device info processes --device "$device_id" \
+        --timeout 15 2>&1)"
+    process_status=$?
+    set -e
+    [[ "$process_status" == "0" ]] ||
+        fail 'could not enumerate Watch processes before launch; refusing to reuse an ambiguous app process'
+    watchfacelab_pids="$(awk '/WatchFaceLab|dev\.develodom\.WatchFaceLab/ {
+        for (i = 1; i <= NF; i++) if ($i ~ /^[0-9]+$/) { print $i; break }
+    }' <<<"$process_table" | sort -u)"
+    if [[ -n "$watchfacelab_pids" ]]; then
+        while IFS= read -r watchfacelab_pid; do
+            xcrun devicectl device process terminate --device "$device_id" \
+                --pid "$watchfacelab_pid" --kill --timeout 15
+            printf 'DEVICE_PROCESS_TERMINATED pid=%s\n' "$watchfacelab_pid"
+        done <<<"$watchfacelab_pids"
+        sleep 1
+    else
+        printf 'DEVICE_PROCESS_TERMINATED not-running\n'
+    fi
     system_run_id="$(date +%s)-$$-$system_action"
     result_dir="$(mktemp -d /tmp/WatchFaceLab-SystemFaceResult.XXXXXX)"
     result_file=""
     progress_file=""
     xcrun devicectl device process launch --device "$device_id" \
         --environment-variables "{\"WATCHFACELAB_SYSTEM_ACTION\":\"$system_action\",\"WATCHFACELAB_SYSTEM_RUN_ID\":\"$system_run_id\"}" \
-        --terminate-existing \
         dev.develodom.WatchFaceLab
     printf 'DEVICE_RESULT_WAIT run=%s (up to 25 seconds)\n' "$system_run_id"
     result_deadline=$((SECONDS + 25))
