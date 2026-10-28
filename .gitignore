@@ -1,7 +1,73 @@
 # macOS metadata
 .DS_Store
+._*
+.AppleDouble
+.LSOverride
+.Spotlight-V100/
+.Trashes/
+.fseventsd/
 
-# Personal Xcode settings, UI state, and breakpoints
+# Xcode user state and generated products
+DerivedData/
+build/
 xcuserdata/
 *.xcuserstate
 *.xcbkptlist
+*.xccheckout
+*.xcscmblueprint
+*.moved-aside
+*.hmap
+*.ipa
+*.xcarchive/
+*.xcresult/
+*.dSYM/
+*.dSYM.zip
+
+# Compiled experiment outputs
+Experiments/Build/
+Experiments/ClockFaceLab/ClockFaceLab.app/
+Experiments/ArgonXPCLab/ArgonXPCLab
+*.app/
+*.framework/
+*.bundle/
+*.dylib
+*.so
+*.a
+*.o
+
+# Extracted Apple runtimes and derived reverse-engineering artifacts
+Experiments/ClockFaceLab/Analysis/Extracted/
+Experiments/ClockFaceLab/Analysis/*.asm.txt
+**/RuntimeRoot/
+*.simruntime/
+*.ipsw
+*.dmg
+*.symbols
+*.disasm
+*.dump
+*.strings.txt
+*.mach-o
+
+# Logs, diagnostics, profiling, and temporary experiment state
+*.log
+*.trace
+*.crash
+*.ips
+*.profraw
+*.profdata
+*.tmp
+*.temp
+*.swp
+*.swo
+*~
+.env
+.env.*
+
+# Historical root-level scratch dumps
+/another.txt
+/dalsi.txt
+/jachciumrit.txt
+/mrdka.txt
+/mrdka2.txt
+/mrdka3.txt
+/picovina.txt
