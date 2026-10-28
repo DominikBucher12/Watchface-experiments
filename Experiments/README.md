@@ -45,8 +45,13 @@ native face inside WatchFaceLab; it does not modify or register with the system
 The physical system collection experiment is explicit and staged. Start with:
 
 ```sh
-bash Experiments/bootstrap-watchos27-device.sh --system-action preflight
+bash Experiments/watchos27-device-face.sh preflight
 ```
+
+This stable convenience script also accepts `result`, `install`, `select`, and
+`rollback`; it automatically selects the first available physical Watch unless
+`--device ID` is supplied. `result` only downloads the last JSON and does not
+build, install, launch, or mutate anything.
 
 Then follow [`Docs/watchos27/DEVICE_SYSTEM_FACE_PROBE.md`](../Docs/watchos27/DEVICE_SYSTEM_FACE_PROBE.md).
 The bootstrap copies the result from the app data container and prints the

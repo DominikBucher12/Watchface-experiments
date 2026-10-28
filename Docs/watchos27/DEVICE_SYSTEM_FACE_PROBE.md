@@ -12,7 +12,7 @@ Run each command from `version/27` on the Mac that has Xcode 27, matching
 watchOS 27 DeviceSupport symbols, and an available paired Watch:
 
 ```sh
-bash Experiments/bootstrap-watchos27-device.sh --system-action preflight
+bash Experiments/watchos27-device-face.sh preflight
 ```
 
 `preflight` opens the real `NTKPersistentFaceCollection` library client, waits
@@ -21,7 +21,7 @@ bundle identifiers, and performs no mutation. Continue only when its JSON says
 `"pass":true`.
 
 ```sh
-bash Experiments/bootstrap-watchos27-device.sh --system-action install
+bash Experiments/watchos27-device-face.sh install
 ```
 
 `install` creates the verified local `MYCustomFace`, adds it at the end of the
@@ -31,14 +31,14 @@ ABI observed by the probe. A second preflight tests whether the daemon returned
 the UUID and whether the custom bundle can still be resolved:
 
 ```sh
-bash Experiments/bootstrap-watchos27-device.sh --system-action preflight
+bash Experiments/watchos27-device-face.sh preflight
 ```
 
 Only if that result contains both `"candidateOrdered":true` and
 `"customResolved":true` should selection be attempted:
 
 ```sh
-bash Experiments/bootstrap-watchos27-device.sh --system-action select
+bash Experiments/watchos27-device-face.sh select
 ```
 
 Selection is refused when the custom bundle cannot be resolved. This protects
@@ -48,7 +48,13 @@ Rollback removes the recorded UUID and restores the previous selected UUID when
 it is still present:
 
 ```sh
-bash Experiments/bootstrap-watchos27-device.sh --system-action rollback
+bash Experiments/watchos27-device-face.sh rollback
+```
+
+The most recent record can be fetched without rebuilding or launching:
+
+```sh
+bash Experiments/watchos27-device-face.sh result
 ```
 
 ## What the results mean

@@ -56,7 +56,7 @@ The next staged system-library experiment starts with a read-only ABI and XPC
 preflight:
 
 ```sh
-bash Experiments/bootstrap-watchos27-device.sh --system-action preflight
+bash Experiments/watchos27-device-face.sh preflight
 ```
 
 Follow [Docs/watchos27/DEVICE_SYSTEM_FACE_PROBE.md](Docs/watchos27/DEVICE_SYSTEM_FACE_PROBE.md)

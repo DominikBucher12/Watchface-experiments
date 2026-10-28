@@ -7,11 +7,13 @@ device_id="${WATCHFACELAB_DEVICE_ID:-}"
 build_only=0
 check_only=0
 system_action=""
+result_only=0
 
 usage() {
     printf '%s\n' \
         "usage: $0 [--device COREDEVICE-ID] [--build-only] [--check]" \
         "          [--system-action preflight|install|select|rollback]" \
+        "          [--result-only]" \
         "" \
         "Builds, signs, installs and launches the watchOS 27 experiment." \
         "Without --system-action it only runs the app-contained preview." \
@@ -47,6 +49,10 @@ while [[ $# -gt 0 ]]; do
             esac
             shift 2
             ;;
+        --result-only)
+            result_only=1
+            shift
+            ;;
         --help|-h)
             usage
             exit 0
@@ -57,28 +63,37 @@ while [[ $# -gt 0 ]]; do
     esac
 done
 
+if [[ "$result_only" == "1" &&
+      ( -n "$system_action" || "$build_only" == "1" || "$check_only" == "1" ) ]]; then
+    fail '--result-only cannot be combined with build, check, or system-action options'
+fi
+
 [[ "$(uname -s)" == "Darwin" ]] || fail 'macOS is required'
 developer_dir="$(xcode-select -p 2>/dev/null || true)"
 [[ -x "$developer_dir/usr/bin/xcodebuild" ]] ||
     fail 'select a full Xcode installation with xcode-select'
-xcrun --sdk watchos --show-sdk-path >/dev/null
-sdk_version="$(xcrun --sdk watchos --show-sdk-version)"
-required_version="${WATCHOS_DEPLOYMENT_TARGET:-27.0}"
-if awk -v sdk="$sdk_version" -v required="$required_version" \
-    'BEGIN { exit !((sdk + 0) < (required + 0)) }'; then
-    fail "active Xcode provides watchOS SDK $sdk_version, but this branch requires $required_version or newer"
-fi
+sdk_version="not-checked"
+if [[ "$result_only" != "1" ]]; then
+    xcrun --sdk watchos --show-sdk-path >/dev/null
+    sdk_version="$(xcrun --sdk watchos --show-sdk-version)"
+    required_version="${WATCHOS_DEPLOYMENT_TARGET:-27.0}"
+    if awk -v sdk="$sdk_version" -v required="$required_version" \
+        'BEGIN { exit !((sdk + 0) < (required + 0)) }'; then
+        fail "active Xcode provides watchOS SDK $sdk_version, but this branch requires $required_version or newer"
+    fi
 
-. "$experiments_dir/resolve-watchos-device-frameworks.sh"
-watchfacelab_resolve_device_frameworks
+    . "$experiments_dir/resolve-watchos-device-frameworks.sh"
+    watchfacelab_resolve_device_frameworks
+fi
 
 device_table="$(xcrun devicectl list devices 2>&1 || true)"
 printf '%s\n' "$device_table"
 if [[ -z "$device_id" ]]; then
-    available_watch_line="$(grep -E 'Apple Watch' <<<"$device_table" |
-        grep -Ev 'unavailable' | head -1 || true)"
-    device_id="$(grep -Eo '[[:xdigit:]]{8}(-[[:xdigit:]]{4}){3}-[[:xdigit:]]{12}' \
-        <<<"$available_watch_line" | head -1 || true)"
+    available_watch_line="$(grep -Ei 'watch' <<<"$device_table" |
+        grep -E 'physical[[:space:]]*$' |
+        grep -E 'available|connected' | head -1 || true)"
+    device_id="$(awk '{ for (i = 1; i < NF; i++) if ($(i + 1) == "(UDID)") { print $i; exit } }' \
+        <<<"$available_watch_line")"
 fi
 
 if [[ "$check_only" == "1" ]]; then
@@ -89,6 +104,23 @@ fi
 
 if [[ "$build_only" != "1" && -z "$device_id" ]]; then
     fail 'no available Apple Watch; unlock it, keep the paired iPhone nearby, and open Devices and Simulators in Xcode'
+fi
+
+if [[ "$result_only" == "1" ]]; then
+    stored_result_dir="$(mktemp -d /tmp/WatchFaceLab-StoredResult.XXXXXX)"
+    xcrun devicectl device copy from --device "$device_id" \
+        --domain-type appDataContainer \
+        --domain-identifier dev.develodom.WatchFaceLab \
+        --source Documents/WatchFaceLab-SystemFaceResult.json \
+        --destination "$stored_result_dir" --timeout 15
+    stored_result_file="$(find "$stored_result_dir" -type f \
+        -name 'WatchFaceLab-SystemFaceResult.json' -print -quit 2>/dev/null || true)"
+    [[ -n "$stored_result_file" ]] ||
+        fail 'CoreDevice completed the copy but the result JSON was not found locally'
+    stored_result_json="$(<"$stored_result_file")"
+    printf 'SYSTEM_FACE_STORED_RESULT %s\n' "$stored_result_json"
+    printf 'DEVICE_RESULT_FETCH=PASS TEMP=%s\n' "$stored_result_dir"
+    exit 0
 fi
 
 derived_data="${WATCHFACELAB_DERIVED_DATA:-/tmp/WatchFaceLab27-DeviceDerived-${device_id:-build}}"
