@@ -39,8 +39,9 @@ The branch's historical simulator framework was also inspected and reports
 `arm64`, `WATCHOSSIMULATOR`, `minos 27.0`, and `sdk 27.0`. With the currently
 installed SDK, every new source file (renderer, bundle, discovery/read/mutation
 probes, bootstrap, and active selector) passes an arm64 watchOS 27.0 compile-only
-check with `-Wall -Wextra -Werror`. Linking and execution still require the
-missing 27 runtime's arm64 private frameworks.
+check with `-Wall -Wextra -Werror`. Execution still requires the missing 27
+runtime; linking now also supports private frameworks stored only in that
+runtime's dyld shared cache.
 
 Reproduce the architecture compile check without modifying a simulator:
 
@@ -99,9 +100,19 @@ bash Experiments/test-system-discovery-overlay.sh rollback SIMULATOR-UUID
 `build-system-loader.sh` derives:
 
 - the private framework root from the selected simulator;
-- the executable architecture from NanoTimeKit;
-- the deployment target from NanoTimeKit's `LC_BUILD_VERSION`; and
+- the executable architecture and deployment target from NanoTimeKit or a
+  system face-bundle Mach-O in the selected runtime; and
 - the public watchsimulator SDK from the active Xcode toolchain.
+
+watchOS 27 runtimes may keep `NanoTimeKit` only in the simulator dyld shared
+cache, so the path
+`System/Library/PrivateFrameworks/NanoTimeKit.framework/NanoTimeKit` need not
+exist as a regular file. In that layout the build creates a narrow temporary
+`NanoTimeKit.tbd` in its `/tmp` output and links it with NanoTimeKit's real
+system install name. At launch, CoreSimulator resolves that install name from
+the runtime cache. The stub contains only symbols used by this experiment; no
+runtime image is extracted, copied into Git, or modified. Build output reports
+either `PRIVATE_FRAMEWORKS=files` or `PRIVATE_FRAMEWORKS=dyld-cache-stub`.
 
 The generated local bundle removes the branch's historical fake `Argon`
 dictionary. Direct system discovery does not use the Argon encrypted-payload

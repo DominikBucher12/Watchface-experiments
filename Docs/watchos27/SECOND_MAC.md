@@ -33,6 +33,12 @@ The script checks the active Xcode and SDK, finds the newest available watchOS
 the runtime's actual architecture, prepares a temporary hybrid root, installs
 and selects the custom face, and opens Simulator.
 
+For a runtime that stores NanoTimeKit only in its dyld shared cache, the build
+prints `PRIVATE_FRAMEWORKS=dyld-cache-stub`. This is expected: the script makes
+a narrow link stub under `/tmp`, while execution still uses NanoTimeKit from
+the installed runtime. A missing regular file at
+`PrivateFrameworks/NanoTimeKit.framework/NanoTimeKit` is not itself an error.
+
 ClockFace is restarted during the procedure, so the simulated display may be
 black or show its inactive clock immediately afterward. Click the **Crown**
 button on the right side of the Simulator window once to wake it. The animated
@@ -76,3 +82,7 @@ explicitly using the identifier printed by `xcrun simctl list runtimes`:
 bash Experiments/bootstrap-watchos27-simulator.sh \
   --runtime com.apple.CoreSimulator.SimRuntime.watchOS-27-0
 ```
+
+The prepare phase is streamed to Terminal and also saved as
+`/tmp/WatchFaceLab-prepare-SIMULATOR-UUID.log`. Send that file with the complete
+Terminal output if a later runtime-specific boundary fails.
