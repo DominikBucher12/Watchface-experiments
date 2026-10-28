@@ -23,6 +23,21 @@ Render a custom Pip-Boy-inspired native `NTKFace` / `NTKFaceView`, then determin
 | Discovery/registration by actual `ClockFace` | **NOT PROVEN** | Separate Apple platform process |
 | Pip-Boy survives exiting WatchFaceLab as native system face | **NOT ACHIEVED** | Original objective |
 
+## Reproduce on a physical Watch
+
+With Developer Mode enabled and the paired Watch available to Xcode:
+
+```sh
+bash Experiments/bootstrap-watchos27-device.sh --check
+bash Experiments/bootstrap-watchos27-device.sh
+```
+
+The bootstrap performs automatic DeviceSupport discovery, app-contained native
+artifact builds, Xcode signing, package verification, installation and launch.
+The currently paired Series 9 can appear as `unavailable` while locked or when
+its paired iPhone is not reachable; in that state use `--build-only` or restore
+the connection before installation.
+
 ## Documents
 
 - [../REPOSITORY_CLEANUP.md](../REPOSITORY_CLEANUP.md) — clean-checkout artifact

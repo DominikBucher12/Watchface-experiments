@@ -4,7 +4,7 @@ The log records **observed results** in chronological order. Exact times are app
 
 | Seq. | Experiment | Evidence / result | Interpretation |
 | --- | --- | --- | --- |
-| 01 | Build custom `MYCustomFace` and render in WatchFaceLab | `CustomFace: presented successfully`; `face=MYCustomFace renderer=MYCustomFaceView style=4345047376 bounds={{0, 0}, {198, 242}}` | App-local native renderer functions; does not survive app suspension as system face. |
+| 01 | Build custom `MYCustomFace` and render in WatchFaceLab | `CustomFace: presented successfully`; the historical log printed an invalid oversized style value, while the verified bundled-face factory uses style `44` | App-local native renderer functions; the Swift entry now uses ABI-safe style `44` on arm64 and arm64_32. |
 | 02 | Device toolchain inspection | Physical Watch Series 9; watchOS 27.0.1 (24R365); `ClockFace`, `nanotimekitd`, etc. in process listing | Separate process hosting system clock. |
 | 03 | External local face bundle build + Xcode embedding | Xcode build and app installation passed | Bundle packaged, not yet proof it loads. |
 | 04 | Verify framework exports | `nm -gU`: `_MYDiscoverLocalFaceBundle` and `_MYPresentCustomFaceExperiment` present | Swift `dlsym` can resolve the two entry points. |

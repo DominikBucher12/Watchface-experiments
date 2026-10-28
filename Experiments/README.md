@@ -28,6 +28,23 @@ The `LocalFaceBundle` sources are included in this checkout.
 
 ## Build on Mac with Xcode watchOS 27 SDK
 
+For the complete signed, app-contained device flow:
+
+```sh
+bash Experiments/bootstrap-watchos27-device.sh --check
+bash Experiments/bootstrap-watchos27-device.sh
+```
+
+The bootstrap finds matching DeviceSupport symbols, builds the framework and
+face bundle before Xcode's embed phases, verifies the signed `.app`, installs it
+on an available paired Apple Watch, and launches WatchFaceLab. Use
+`--build-only` when the Watch is temporarily unavailable. This renders the
+native face inside WatchFaceLab; it does not modify or register with the system
+`ClockFace` process.
+
+Manual framework builds remain available. Explicit paths override automatic
+DeviceSupport discovery:
+
 ```sh
 ROOT="$HOME/Library/Developer/Xcode/watchOS DeviceSupport/27.0.1 (24R365) universal/Symbols/System/Library/PrivateFrameworks"
 export WATCH_NTK_BINARY="$ROOT/NanoTimeKit.framework/NanoTimeKit"
@@ -41,7 +58,9 @@ Execute from the directory *above* `Experiments`. The `LocalFaceBundle` files ar
 ## Device integration caution
 - watchOS device and simulator binaries are distinct platforms.
 - Symbol files from DeviceSupport are not necessarily suitable link-time stubs; successful linking does not guarantee on-device dynamic linking.
-- The compiled output is a loose `.dylib`; for deployment use an appropriately structured **embedded framework**, signed by Xcode with the containing Watch app. This archive does not provide that framework target.
+- Device outputs are generated under ignored `Experiments/Build/Device`; Xcode embeds and signs the framework and bundle with the containing Watch app.
 - System-host hooks are disabled. Do not patch or resign system Watch apps assuming they will retain private entitlements.
 - Do not assume `UIKit` availability or the selected private selectors on a physical watch; first validate with safe runtime introspection.
-- No watchOS 27 physical-device build or launch was performed here.
+- The app-contained renderer and local discovery were previously verified on a
+  physical watchOS 27.0.1 Watch; persistent system-face registration remains
+  unproven.

@@ -17,6 +17,25 @@
 
 ## Build sequence that worked
 
+The current one-command path is:
+
+```bash
+bash Experiments/bootstrap-watchos27-device.sh --check
+bash Experiments/bootstrap-watchos27-device.sh
+```
+
+`--build-only` produces and verifies the signed app without requiring the Watch
+to be online. `--device COREDEVICE-ID` selects a particular available Watch.
+The resolver chooses the newest matching watchOS DeviceSupport pair by default;
+set `WATCH_DEVICE_SUPPORT_FILTER=24R365` or explicit binary variables when a
+specific build is required.
+
+The bootstrap is deliberately app-contained. A successful run proves native
+rendering and local bundle discovery inside WatchFaceLab, not registration in
+the separately signed system `ClockFace` process.
+
+### Manual equivalent
+
 From repository root on the Mac:
 
 ```bash
@@ -31,13 +50,23 @@ FW="Experiments/Build/Device/MYCustomFaceExperiment.framework"
 xcrun nm -gU "$FW/MYCustomFaceExperiment" | grep -E 'MYDiscoverLocalFaceBundle|MYPresentCustomFaceExperiment'
 ```
 
-The framework script **requires** `WATCH_NTK_BINARY`; omission produces `line 9: WATCH_NTK_BINARY: export WATCH_NTK_BINARY with the device NanoTimeKit Mach-O path`. The local bundle script requires the built framework first.
+Both scripts now resolve a matching NanoTimeKit/ClockKitUI pair from Xcode
+DeviceSupport automatically. Explicit `WATCH_NTK_BINARY` and
+`WATCH_CLOCKKITUI_BINARY` values override discovery. The local bundle script
+still requires the framework build first; the Xcode phase and bootstrap enforce
+that order.
 
-### Xcode phase ordering / stale binary trap
+### Xcode phase ordering / stale binary trap (fixed)
 
 Observed Xcode phases: `Embed Frameworks`, custom `Run build-local-face-bundle`, `Copy Files` (resource embedding, `Code Sign On Copy`). A normal Xcode app rebuild **did not necessarily rebuild the manually produced framework**. This caused an old Objective-C selector to remain in the deployed binary after source changes.
 
-**Desired dependency order:** build framework → build local face bundle → embed/sign both artifacts. Xcode phases must implement that order explicitly; `Embed Frameworks` only copies/signs an existing framework. Validate framework exports with `nm` **after** build, before app installation. Confirm final `.app` layout and `LC_RPATH` if changing Copy Files destination.
+The bootstrap builds the framework and local face bundle before invoking
+`xcodebuild`, so Xcode creates its copy graph from current, clean inputs. The
+project's Run Script phase repeats the same build for direct Xcode builds, then
+the copy phases embed and sign both artifacts. The bootstrap validates the final
+app layout, signatures, platform load command and NanoTimeKit dependency before
+installing. The watchOS 27 target is constrained to `arm64`, matching the
+embedded private framework and face bundle; the verifier rejects mixed slices.
 
 ### dSYM placement failure
 
@@ -58,7 +87,10 @@ if [ -d "$FW/MYCustomFaceExperiment.dSYM" ]; then
 fi
 ```
 
-**Known technical debt:** permanently fix output location in `build-embedded-framework.sh` (user explicitly deferred this). If destination already exists, inspect before replacing rather than blindly overwriting debug symbols.
+Standalone `clang -g` can create a nested dSYM after linking. The framework
+script moves that output, plus any copy left by an older build, under
+`Experiments/Build/Device/DebugSymbols/` before Xcode copies the framework.
+Keep any future dSYM beside the framework rather than inside it.
 
 ## Selector ABI regression (fixed)
 

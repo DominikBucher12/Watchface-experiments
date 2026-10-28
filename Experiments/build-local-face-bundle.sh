@@ -1,9 +1,8 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# Run from the repository root after build-embedded-framework.sh.
-repo="$(pwd)"
-experiment_dir="$repo/Experiments"
+# Run after build-embedded-framework.sh. The path is independent of cwd/Xcode.
+experiment_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 framework_root="$experiment_dir/Build/Device"
 framework="$framework_root/MYCustomFaceExperiment.framework/MYCustomFaceExperiment"
 source="$experiment_dir/LocalFaceBundle/MYLocalFaceBundle.m"
@@ -17,20 +16,23 @@ for file in "$framework" "$source" "$plist"; do
   fi
 done
 
-ntk="${WATCH_NTK_BINARY:-$HOME/Library/Developer/Xcode/watchOS DeviceSupport/27.0.1 (24R365) universal/Symbols/System/Library/PrivateFrameworks/NanoTimeKit.framework/NanoTimeKit}"
-if [[ ! -f "$ntk" ]]; then
-  printf 'ERROR: missing device NanoTimeKit binary: %s\n' "$ntk" >&2
-  exit 2
-fi
+. "$experiment_dir/resolve-watchos-device-frameworks.sh"
+watchfacelab_resolve_device_frameworks
+ntk="$WATCH_NTK_BINARY"
+deployment_target="${WATCHOS_DEPLOYMENT_TARGET:-$(
+  xcrun vtool -show-build "$ntk" 2>/dev/null |
+    awk '/minos/ { print $2; exit }'
+)}"
+[[ -n "$deployment_target" ]] || deployment_target="$(xcrun --sdk watchos --show-sdk-version)"
 
 sdk="$(xcrun --sdk watchos --show-sdk-path)"
 mkdir -p "$bundle"
 cp "$plist" "$bundle/Info.plist"
 /usr/libexec/PlistBuddy -c 'Set :CFBundleSupportedPlatforms:0 WatchOS' "$bundle/Info.plist"
-/usr/libexec/PlistBuddy -c 'Set :MinimumOSVersion 27.0' "$bundle/Info.plist"
+/usr/libexec/PlistBuddy -c "Set :MinimumOSVersion $deployment_target" "$bundle/Info.plist"
 
 xcrun --sdk watchos clang \
-  -target arm64-apple-watchos27.0 -isysroot "$sdk" \
+  -target "arm64-apple-watchos$deployment_target" -isysroot "$sdk" \
   -fobjc-arc -fno-modules -Wall -Wextra -Werror \
   -bundle "$source" \
   -F "$framework_root" -framework MYCustomFaceExperiment \

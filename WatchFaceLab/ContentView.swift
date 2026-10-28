@@ -17,7 +17,7 @@ struct ContentView: View {
                     Text(String(format: "%02d:%02d", h, m))
                         .font(.system(size: 42, weight: .thin, design: .rounded))
                         .monospacedDigit()
-                    Text("watchOS 26.5 · public baseline")
+                    Text("watchOS 27 · device research")
                         .font(.system(size: 9, design: .monospaced))
                         .foregroundStyle(.gray)
                 }
@@ -47,8 +47,8 @@ private struct DiagnosticsView: View {
             VStack(alignment: .leading, spacing: 10) {
                 Text("Runtime diagnostics")
                     .font(.headline)
-                Text("This app does NOT register an NTKFace or load private frameworks.")
-                Text("Next stage: build a separate experimental module and test it inside the watch simulator process using LLDB.")
+                Text("The app loads the signed MYCustomFaceExperiment framework and local face bundle inside WatchFaceLab.")
+                Text("This is an app-contained native renderer. It does not register a persistent system face or modify ClockFace.")
                 Text("Architecture: \(architecture)")
             }
             .font(.footnote)

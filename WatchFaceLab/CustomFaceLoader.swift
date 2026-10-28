@@ -87,8 +87,9 @@ enum CustomFaceLoader {
             to: PresentFunction.self
         )
 
-        // Style observed in the previous successful experiment.
-        let style = 4_345_047_376
+        // The bundled-face factory uses style 0x2c. It is valid for both the
+        // arm64 and arm64_32 watchOS ABIs.
+        let style = 44
 
         let result = present(style)
 

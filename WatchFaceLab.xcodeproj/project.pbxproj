@@ -18,7 +18,7 @@
 /* Begin PBXCopyFilesBuildPhase section */
 		4E24FD45308992B900446D36 /* Embed Frameworks */ = {
 			isa = PBXCopyFilesBuildPhase;
-			buildActionMask = 12;
+			buildActionMask = 2147483647;
 			dstPath = "";
 			dstSubfolderSpec = 10;
 			files = (
@@ -122,8 +122,8 @@
 				010000000000000000000012 /* Sources */,
 				010000000000000000000013 /* Resources */,
 				4E24FD44308992B900446D36 /* Frameworks */,
-				4E24FD45308992B900446D36 /* Embed Frameworks */,
 				4E7CD090308AA3E700DFEB93 /* Run build-local-face-bundle */,
+				4E24FD45308992B900446D36 /* Embed Frameworks */,
 				4E7CD08D308AA34300DFEB93 /* CopyFiles */,
 			);
 			buildRules = (
@@ -181,6 +181,7 @@
 /* Begin PBXShellScriptBuildPhase section */
 		4E7CD090308AA3E700DFEB93 /* Run build-local-face-bundle */ = {
 			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
 			files = (
 			);
@@ -188,14 +189,16 @@
 			);
 			inputPaths = (
 			);
-			name = "Run build-local-face-bundle";
+			name = "Build device face artifacts";
 			outputFileListPaths = (
 			);
 			outputPaths = (
+				"$(SRCROOT)/Experiments/Build/Device/MYCustomFaceExperiment.framework/MYCustomFaceExperiment",
+				"$(SRCROOT)/Experiments/Build/Device/FaceBundles/MYLocalFaceBundle.bundle/MYLocalFaceBundle",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "# Type a script or drag a script file from your workspace to insert its path.\nbash \"$SRCROOT/Experiments/build-embedded-framework.sh\"\nbash \"$SRCROOT/Experiments/build-local-face-bundle.sh\"\n";
+			shellScript = "set -e\nif [ \"$PLATFORM_NAME\" != \"watchos\" ]; then\n  echo \"Skipping device-only private framework build for $PLATFORM_NAME\"\n  exit 0\nfi\nbash \"$SRCROOT/Experiments/build-embedded-framework.sh\"\nbash \"$SRCROOT/Experiments/build-local-face-bundle.sh\"\n";
 		};
 /* End PBXShellScriptBuildPhase section */
 
@@ -234,10 +237,12 @@
 		010000000000000000000042 /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ARCHS = arm64;
 				ASSETCATALOG_COMPILER_APPICON_NAME = "";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = X2MB65427X;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/Experiments/Build/Device",
@@ -250,7 +255,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = dev.develodom.WatchFaceLab;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = NO;
-				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				SUPPORTED_PLATFORMS = watchos;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 4;
@@ -261,10 +266,12 @@
 		010000000000000000000043 /* Release */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
+				ARCHS = arm64;
 				ASSETCATALOG_COMPILER_APPICON_NAME = "";
 				CODE_SIGN_STYLE = Automatic;
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = X2MB65427X;
+				ENABLE_USER_SCRIPT_SANDBOXING = NO;
 				FRAMEWORK_SEARCH_PATHS = (
 					"$(inherited)",
 					"$(PROJECT_DIR)/Experiments/Build/Device",
@@ -277,7 +284,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = dev.develodom.WatchFaceLab;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = NO;
-				SUPPORTED_PLATFORMS = "watchos watchsimulator";
+				SUPPORTED_PLATFORMS = watchos;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 4;

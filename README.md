@@ -39,7 +39,24 @@ A read-only LLDB process list on the physical device confirmed `ClockFace`, `nan
 
 ## Device build
 
-The device build script targets `arm64-apple-watchos27.0`, validates private framework device platforms, and emits experimental binaries **without signing them**. This is intentional: the enclosing watchOS app's Xcode build / signing phase must package and sign its embedded code. An ad-hoc signature is not a substitute for deployment signing or system entitlements.
+The shortest app-contained physical-device flow now autodetects matching Xcode
+DeviceSupport symbols, builds the native artifacts before their embed phases,
+signs the containing app with Xcode, verifies the package, installs it and
+launches WatchFaceLab:
+
+```sh
+bash Experiments/bootstrap-watchos27-device.sh --check
+bash Experiments/bootstrap-watchos27-device.sh
+```
+
+Use `--build-only` while the paired Watch is unavailable. This flow does not
+modify or register with the system `ClockFace` process.
+
+The lower-level device build script targets arm64 watchOS, validates private
+framework device platforms, and emits experimental binaries **without signing
+them**. This is intentional: the enclosing watchOS app's Xcode build/signing
+phase must package and sign its embedded code. An ad-hoc signature is not a
+substitute for deployment signing or system entitlements.
 
 ```sh
 ROOT="$HOME/Library/Developer/Xcode/watchOS DeviceSupport/27.0.1 (24R365) universal/Symbols/System/Library/PrivateFrameworks"
