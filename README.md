@@ -1,5 +1,12 @@
 # Watchface Experiments — watchOS 27 (device / arm64)
 
+> **`complication` branch:** This branch implements the stock-device fallback:
+> a public WidgetKit Pip-Boy complication embedded in a clean watchOS host app.
+> Install it with `bash Experiments/watchos27-complication.sh`, then select
+> **Pip-Boy Monitor** in a system face's complication editor. See
+> [Docs/COMPLICATION.md](Docs/COMPLICATION.md). The private native-renderer
+> research remains preserved on `version/27`.
+
 > **Research status (2026-10-22):** A custom `NTKFace`/`NTKFaceView` renders inside the WatchFaceLab application on a physical watch, but **has not been installed as a persistent system watch face**. This repository explores private watchOS interfaces for educational reverse engineering; it is not an Apple-supported watch-face installer.
 >
 > **Scope:** This document describes `Experiments/` on the `version/27` branch. Findings marked **Verified** are based on the device, tool output, or the watchOS 27.0.1 NanoTimeKit binary; **Hypothesis / Open** means not experimentally established.

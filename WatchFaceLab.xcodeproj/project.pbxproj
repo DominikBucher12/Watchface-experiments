@@ -10,12 +10,35 @@
 		010000000000000000000030 /* WatchFaceLabApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 010000000000000000000020 /* WatchFaceLabApp.swift */; };
 		010000000000000000000031 /* ContentView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 010000000000000000000021 /* ContentView.swift */; };
 		010000000000000000000032 /* Resources/pip-boy-reference.gif in Resources */ = {isa = PBXBuildFile; fileRef = 010000000000000000000026 /* Resources/pip-boy-reference.gif */; };
+		020000000000000000000030 /* PipBoyComplication.swift in Sources */ = {isa = PBXBuildFile; fileRef = 020000000000000000000020 /* PipBoyComplication.swift */; };
+		020000000000000000000031 /* PipBoyComplication.appex in Embed App Extensions */ = {isa = PBXBuildFile; fileRef = 020000000000000000000005 /* PipBoyComplication.appex */; settings = {ATTRIBUTES = (RemoveHeadersOnCopy, ); }; };
 		4E24FD483089933D00446D36 /* MYCustomFaceExperiment.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 4E24FD473089933D00446D36 /* MYCustomFaceExperiment.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		4E24FD4A308998BC00446D36 /* CustomFaceLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E24FD49308998B600446D36 /* CustomFaceLoader.swift */; };
 		4E7CD08F308AA3C400DFEB93 /* MYLocalFaceBundle.bundle in CopyFiles */ = {isa = PBXBuildFile; fileRef = 4E7CD08E308AA3C400DFEB93 /* MYLocalFaceBundle.bundle */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		020000000000000000000050 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 010000000000000000000001 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 020000000000000000000002;
+			remoteInfo = PipBoyComplication;
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXCopyFilesBuildPhase section */
+		020000000000000000000015 /* Embed App Extensions */ = {
+			isa = PBXCopyFilesBuildPhase;
+			buildActionMask = 2147483647;
+			dstPath = "";
+			dstSubfolderSpec = 13;
+			files = (
+				020000000000000000000031 /* PipBoyComplication.appex in Embed App Extensions */,
+			);
+			name = "Embed App Extensions";
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		4E24FD45308992B900446D36 /* Embed Frameworks */ = {
 			isa = PBXCopyFilesBuildPhase;
 			buildActionMask = 2147483647;
@@ -48,6 +71,9 @@
 		010000000000000000000024 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = text.markdown; path = README.md; sourceTree = "<group>"; };
 		010000000000000000000025 /* RESEARCH.md */ = {isa = PBXFileReference; lastKnownFileType = text.markdown; name = RESEARCH.md; path = Docs/RESEARCH.md; sourceTree = "<group>"; };
 		010000000000000000000026 /* Resources/pip-boy-reference.gif */ = {isa = PBXFileReference; lastKnownFileType = image.gif; path = "Resources/pip-boy-reference.gif"; sourceTree = "<group>"; };
+		020000000000000000000005 /* PipBoyComplication.appex */ = {isa = PBXFileReference; explicitFileType = "wrapper.app-extension"; includeInIndex = 0; path = PipBoyComplication.appex; sourceTree = BUILT_PRODUCTS_DIR; };
+		020000000000000000000020 /* PipBoyComplication.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PipBoyComplication.swift; sourceTree = "<group>"; };
+		020000000000000000000021 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		4E24FD473089933D00446D36 /* MYCustomFaceExperiment.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MYCustomFaceExperiment.framework; path = Experiments/Build/Device/MYCustomFaceExperiment.framework; sourceTree = "<group>"; };
 		4E24FD49308998B600446D36 /* CustomFaceLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomFaceLoader.swift; sourceTree = "<group>"; };
 		4E7CD08E308AA3C400DFEB93 /* MYLocalFaceBundle.bundle */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.plug-in"; name = MYLocalFaceBundle.bundle; path = Experiments/Build/Device/FaceBundles/MYLocalFaceBundle.bundle; sourceTree = "<group>"; };
@@ -55,6 +81,13 @@
 
 /* Begin PBXFrameworksBuildPhase section */
 		4E24FD44308992B900446D36 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		020000000000000000000014 /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
@@ -70,6 +103,7 @@
 				4E7CD08E308AA3C400DFEB93 /* MYLocalFaceBundle.bundle */,
 				4E24FD473089933D00446D36 /* MYCustomFaceExperiment.framework */,
 				010000000000000000000006 /* WatchFaceLab */,
+				020000000000000000000006 /* PipBoyComplication */,
 				010000000000000000000007 /* Experiments */,
 				010000000000000000000008,
 				010000000000000000000004 /* Products */,
@@ -80,6 +114,7 @@
 			isa = PBXGroup;
 			children = (
 				010000000000000000000005 /* WatchFaceLab.app */,
+				020000000000000000000005 /* PipBoyComplication.appex */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -104,6 +139,15 @@
 			path = Experiments;
 			sourceTree = "<group>";
 		};
+		020000000000000000000006 /* PipBoyComplication */ = {
+			isa = PBXGroup;
+			children = (
+				020000000000000000000020 /* PipBoyComplication.swift */,
+				020000000000000000000021 /* Info.plist */,
+			);
+			path = PipBoyComplication;
+			sourceTree = "<group>";
+		};
 		010000000000000000000008 = {
 			isa = PBXGroup;
 			children = (
@@ -121,19 +165,36 @@
 			buildPhases = (
 				010000000000000000000012 /* Sources */,
 				010000000000000000000013 /* Resources */,
+				020000000000000000000060 /* Embed optional exported face */,
 				4E24FD44308992B900446D36 /* Frameworks */,
-				4E7CD090308AA3E700DFEB93 /* Run build-local-face-bundle */,
-				4E24FD45308992B900446D36 /* Embed Frameworks */,
-				4E7CD08D308AA34300DFEB93 /* CopyFiles */,
+				020000000000000000000015 /* Embed App Extensions */,
 			);
 			buildRules = (
 			);
 			dependencies = (
+				020000000000000000000051 /* PBXTargetDependency */,
 			);
 			name = WatchFaceLab;
 			productName = WatchFaceLab;
 			productReference = 010000000000000000000005 /* WatchFaceLab.app */;
 			productType = "com.apple.product-type.application";
+		};
+		020000000000000000000002 /* PipBoyComplication */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 020000000000000000000011 /* Build configuration list for PBXNativeTarget "PipBoyComplication" */;
+			buildPhases = (
+				020000000000000000000012 /* Sources */,
+				020000000000000000000014 /* Frameworks */,
+				020000000000000000000013 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = PipBoyComplication;
+			productName = PipBoyComplication;
+			productReference = 020000000000000000000005 /* PipBoyComplication.appex */;
+			productType = "com.apple.product-type.app-extension";
 		};
 /* End PBXNativeTarget section */
 
@@ -145,6 +206,9 @@
 				LastUpgradeCheck = 2650;
 				TargetAttributes = {
 					010000000000000000000002 = {
+						CreatedOnToolsVersion = 26.5;
+					};
+					020000000000000000000002 = {
 						CreatedOnToolsVersion = 26.5;
 					};
 				};
@@ -163,6 +227,7 @@
 			projectRoot = "";
 			targets = (
 				010000000000000000000002 /* WatchFaceLab */,
+				020000000000000000000002 /* PipBoyComplication */,
 			);
 		};
 /* End PBXProject section */
@@ -176,9 +241,35 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		020000000000000000000013 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
+		020000000000000000000060 /* Embed optional exported face */ = {
+			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = "Embed optional exported face";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "seed=\"$SRCROOT/WatchFaceLab/Resources/PipBoy.watchface\"\nif [ -f \"$seed\" ]; then\n  cp \"$seed\" \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/PipBoy.watchface\"\n  echo \"Embedded system-exported PipBoy.watchface\"\nelse\n  echo \"No exported PipBoy.watchface seed; use the manual complication setup first\"\nfi\n";
+		};
 		4E7CD090308AA3E700DFEB93 /* Run build-local-face-bundle */ = {
 			isa = PBXShellScriptBuildPhase;
 			alwaysOutOfDate = 1;
@@ -208,12 +299,27 @@
 			buildActionMask = 2147483647;
 			files = (
 				010000000000000000000030 /* WatchFaceLabApp.swift in Sources */,
-				4E24FD4A308998BC00446D36 /* CustomFaceLoader.swift in Sources */,
 				010000000000000000000031 /* ContentView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
+		020000000000000000000012 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				020000000000000000000030 /* PipBoyComplication.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		020000000000000000000051 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 020000000000000000000002 /* PipBoyComplication */;
+			targetProxy = 020000000000000000000050 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin XCBuildConfiguration section */
 		010000000000000000000040 /* Debug */ = {
@@ -248,11 +354,11 @@
 					"$(PROJECT_DIR)/Experiments/Build/Device",
 				);
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = WatchFaceLab;
+				INFOPLIST_KEY_CFBundleDisplayName = "Pip-Boy Setup";
 				INFOPLIST_KEY_WKApplication = YES;
 				INFOPLIST_KEY_WKWatchOnly = YES;
 				MARKETING_VERSION = 0.1;
-				PRODUCT_BUNDLE_IDENTIFIER = dev.develodom.WatchFaceLab;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.develodom.WatchFaceLab.ComplicationHost;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = NO;
 				SUPPORTED_PLATFORMS = watchos;
@@ -277,13 +383,55 @@
 					"$(PROJECT_DIR)/Experiments/Build/Device",
 				);
 				GENERATE_INFOPLIST_FILE = YES;
-				INFOPLIST_KEY_CFBundleDisplayName = WatchFaceLab;
+				INFOPLIST_KEY_CFBundleDisplayName = "Pip-Boy Setup";
 				INFOPLIST_KEY_WKApplication = YES;
 				INFOPLIST_KEY_WKWatchOnly = YES;
 				MARKETING_VERSION = 0.1;
-				PRODUCT_BUNDLE_IDENTIFIER = dev.develodom.WatchFaceLab;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.develodom.WatchFaceLab.ComplicationHost;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SKIP_INSTALL = NO;
+				SUPPORTED_PLATFORMS = watchos;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 27.0;
+			};
+			name = Release;
+		};
+		020000000000000000000042 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				ARCHS = arm64;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = X2MB65427X;
+				INFOPLIST_FILE = PipBoyComplication/Info.plist;
+				MARKETING_VERSION = 0.1;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.develodom.WatchFaceLab.ComplicationHost.PipBoy;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
+				SUPPORTED_PLATFORMS = watchos;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				TARGETED_DEVICE_FAMILY = 4;
+				WATCHOS_DEPLOYMENT_TARGET = 27.0;
+			};
+			name = Debug;
+		};
+		020000000000000000000043 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				APPLICATION_EXTENSION_API_ONLY = YES;
+				ARCHS = arm64;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_TEAM = X2MB65427X;
+				INFOPLIST_FILE = PipBoyComplication/Info.plist;
+				MARKETING_VERSION = 0.1;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.develodom.WatchFaceLab.ComplicationHost.PipBoy;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SKIP_INSTALL = YES;
 				SUPPORTED_PLATFORMS = watchos;
 				SWIFT_EMIT_LOC_STRINGS = YES;
 				SWIFT_VERSION = 5.0;
@@ -309,6 +457,15 @@
 			buildConfigurations = (
 				010000000000000000000042 /* Debug */,
 				010000000000000000000043 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		020000000000000000000011 /* Build configuration list for PBXNativeTarget "PipBoyComplication" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				020000000000000000000042 /* Debug */,
+				020000000000000000000043 /* Release */,
 			);
 			defaultConfigurationIsVisible = 0;
 			defaultConfigurationName = Release;
