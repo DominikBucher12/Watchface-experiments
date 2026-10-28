@@ -21,11 +21,11 @@ app process; a timeout or invalid result stops the batch without retrying it.
 Generated corpus and evidence directories are ignored by Git.
 
 ```sh
-bash Experiments/cve-probe-lab.sh prepare
-# Use the CORPUS path printed above:
-bash Experiments/cve-probe-lab.sh batch "$CORPUS" --plan
-bash Experiments/cve-probe-lab.sh batch "$CORPUS" --owned-device
+bash Experiments/run-all-s9-cve-probes.sh --owned-device
 ```
+
+This one command prepares and verifies the corpus, previews the plan, builds
+once, and runs every available case. Use `--plan-only` for a no-device dry run.
 
 The public watchOS SDK has no VideoToolbox encoder API, so this does not claim
 to reproduce an `AVEVideoEncoder` CVE. See

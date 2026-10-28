@@ -86,31 +86,43 @@ def default_font() -> Path | None:
 
 def make_video_seed(image: Path, destination: Path) -> bool:
     ffmpeg = shutil.which("ffmpeg")
-    if ffmpeg is None:
-        return False
-    commands = (
-        [
-            ffmpeg,
-            "-y", "-v", "error", "-i", str(image), "-t", "1",
-            "-vf", "scale=64:64:force_original_aspect_ratio=decrease,pad=64:64:(ow-iw)/2:(oh-ih)/2:black",
-            "-an", "-c:v", "libx264", "-pix_fmt", "yuv420p",
-            "-movflags", "+faststart", str(destination),
-        ],
-        [
-            ffmpeg,
-            "-y", "-v", "error", "-i", str(image), "-t", "1",
-            "-vf", "scale=64:64:force_original_aspect_ratio=decrease,pad=64:64:(ow-iw)/2:(oh-ih)/2:black",
-            "-an", "-c:v", "h264_videotoolbox", "-pix_fmt", "yuv420p",
-            "-movflags", "+faststart", str(destination),
-        ],
-    )
-    for command in commands:
-        completed = subprocess.run(
-            command,
-            stdout=subprocess.DEVNULL,
-            stderr=subprocess.DEVNULL,
-            check=False,
+    commands: list[list[str]] = []
+    if ffmpeg is not None:
+        commands.extend(
+            (
+                [
+                    ffmpeg,
+                    "-y", "-v", "error", "-i", str(image), "-t", "1",
+                    "-vf", "scale=64:64:force_original_aspect_ratio=decrease,pad=64:64:(ow-iw)/2:(oh-ih)/2:black",
+                    "-an", "-c:v", "libx264", "-pix_fmt", "yuv420p",
+                    "-movflags", "+faststart", str(destination),
+                ],
+                [
+                    ffmpeg,
+                    "-y", "-v", "error", "-i", str(image), "-t", "1",
+                    "-vf", "scale=64:64:force_original_aspect_ratio=decrease,pad=64:64:(ow-iw)/2:(oh-ih)/2:black",
+                    "-an", "-c:v", "h264_videotoolbox", "-pix_fmt", "yuv420p",
+                    "-movflags", "+faststart", str(destination),
+                ],
+            )
         )
+    xcrun = shutil.which("xcrun")
+    swift_generator = Path(__file__).with_name("make_video_seed.swift")
+    if xcrun is not None and swift_generator.is_file():
+        commands.append([xcrun, "swift", str(swift_generator), str(destination)])
+
+    for command in commands:
+        try:
+            completed = subprocess.run(
+                command,
+                stdout=subprocess.DEVNULL,
+                stderr=subprocess.DEVNULL,
+                check=False,
+                timeout=60,
+            )
+        except subprocess.TimeoutExpired:
+            destination.unlink(missing_ok=True)
+            continue
         if completed.returncode == 0 and destination.is_file() and destination.stat().st_size:
             return True
         destination.unlink(missing_ok=True)
