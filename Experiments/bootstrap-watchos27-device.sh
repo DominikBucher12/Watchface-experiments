@@ -174,18 +174,20 @@ if [[ -n "$system_action" ]]; then
     attempt=0
     while (( SECONDS < result_deadline )); do
         attempt=$((attempt + 1))
-        candidate="$result_dir/result-$attempt.json"
+        attempt_dir="$result_dir/attempt-$attempt"
+        mkdir -p "$attempt_dir"
         set +e
         xcrun devicectl device copy from --device "$device_id" \
             --domain-type appDataContainer \
             --domain-identifier dev.develodom.WatchFaceLab \
             --source Documents/WatchFaceLab-SystemFaceResult.json \
-            --destination "$candidate" --quiet --timeout 3 \
+            --destination "$attempt_dir" --quiet --timeout 3 \
             >/dev/null 2>&1
         copy_status=$?
         set -e
         if [[ "$copy_status" == "0" ]]; then
-            copied_file="$(find "$candidate" -type f -print -quit 2>/dev/null || true)"
+            copied_file="$(find "$attempt_dir" -type f \
+                -name 'WatchFaceLab-SystemFaceResult.json' -print -quit 2>/dev/null || true)"
             if [[ -n "$copied_file" ]] &&
                 grep -Fq "\"runID\":\"$system_run_id\"" "$copied_file"; then
                 progress_file="$copied_file"
@@ -198,6 +200,23 @@ if [[ -n "$system_action" ]]; then
         sleep 1
     done
     if [[ -z "$result_file" ]]; then
+        diagnostic_dir="$result_dir/diagnostic"
+        mkdir -p "$diagnostic_dir"
+        printf 'DEVICE_RESULT_DIAGNOSTIC_COPY_BEGIN\n'
+        set +e
+        xcrun devicectl device copy from --device "$device_id" \
+            --domain-type appDataContainer \
+            --domain-identifier dev.develodom.WatchFaceLab \
+            --source Documents --destination "$diagnostic_dir" --timeout 10
+        diagnostic_copy_status=$?
+        set -e
+        printf 'DEVICE_RESULT_DIAGNOSTIC_COPY_END status=%s\n' "$diagnostic_copy_status"
+        diagnostic_file="$(find "$diagnostic_dir" -type f \
+            -name 'WatchFaceLab-SystemFaceResult.json' -print -quit 2>/dev/null || true)"
+        if [[ -n "$diagnostic_file" ]]; then
+            diagnostic_json="$(<"$diagnostic_file")"
+            printf 'SYSTEM_FACE_DIAGNOSTIC %s\n' "$diagnostic_json"
+        fi
         if [[ -n "$progress_file" ]]; then
             progress_json="$(<"$progress_file")"
             printf 'SYSTEM_FACE_PROGRESS %s\n' "$progress_json"
