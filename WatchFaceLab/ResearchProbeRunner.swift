@@ -9,6 +9,12 @@ private struct ResearchProbeOutcome {
     let details: [String: Any]
 }
 
+private enum VideoMetadataResult {
+    case loaded(durationSeconds: Double, trackCount: Int)
+    case rejected(String)
+    case timedOut
+}
+
 private enum ResearchProbeFailure: LocalizedError {
     case invalidConfiguration(String)
 
@@ -84,6 +90,16 @@ enum ResearchProbeRunner {
                 )
             }
 
+            writeResult(
+                runID: runID,
+                caseID: caseID,
+                probe: probe,
+                phase: "input-verified",
+                complete: false,
+                inputBytes: data.count,
+                inputSHA256: actualHash
+            )
+
             let outcome: ResearchProbeOutcome
             switch probe {
             case "imageio":
@@ -93,7 +109,18 @@ enum ResearchProbeRunner {
             case "audio":
                 outcome = probeAudio(inputURL)
             case "video":
-                outcome = await probeVideo(inputURL)
+                outcome = await probeVideo(inputURL) { phase, details in
+                    writeResult(
+                        runID: runID,
+                        caseID: caseID,
+                        probe: probe,
+                        phase: phase,
+                        complete: false,
+                        inputBytes: data.count,
+                        inputSHA256: actualHash,
+                        details: details
+                    )
+                }
             default:
                 throw ResearchProbeFailure.invalidConfiguration(
                     "unknown probe: \(probe)"
@@ -241,43 +268,116 @@ enum ResearchProbeRunner {
         }
     }
 
-    private static func probeVideo(_ inputURL: URL) async -> ResearchProbeOutcome {
-        do {
-            let asset = AVURLAsset(url: inputURL)
-            let duration = try await asset.load(.duration)
-            let tracks = try await asset.loadTracks(withMediaType: .video)
-            guard !tracks.isEmpty else {
-                return ResearchProbeOutcome(
-                    accepted: false,
-                    details: ["reason": "AVFoundation found no video track"]
-                )
-            }
-
-            let item = AVPlayerItem(asset: asset)
-            let player = AVPlayer(playerItem: item)
-            player.isMuted = true
-            let preroll = await boundedPreroll(player)
-            player.pause()
-            player.replaceCurrentItem(with: nil)
-
-            var details: [String: Any] = [
-                "durationSeconds": duration.seconds.isFinite ? duration.seconds : -1,
-                "trackCount": tracks.count,
-            ]
-            if let preroll {
-                details["prerollCompleted"] = preroll
-            } else {
-                details["prerollTimedOut"] = true
-            }
-            return ResearchProbeOutcome(accepted: true, details: details)
-        } catch {
+    private static func probeVideo(
+        _ inputURL: URL,
+        progress: (String, [String: Any]?) -> Void
+    ) async -> ResearchProbeOutcome {
+        let asset = AVURLAsset(url: inputURL)
+        progress("video-metadata-started", nil)
+        let metadata = await boundedVideoMetadata(asset)
+        let durationSeconds: Double
+        let trackCount: Int
+        switch metadata {
+        case .loaded(let duration, let count):
+            durationSeconds = duration
+            trackCount = count
+        case .rejected(let message):
             return ResearchProbeOutcome(
                 accepted: false,
                 details: [
                     "reason": "AVFoundation rejected the input",
-                    "parserError": (error as NSError).localizedDescription,
+                    "parserError": message,
                 ]
             )
+        case .timedOut:
+            return ResearchProbeOutcome(
+                accepted: false,
+                details: ["reason": "AVFoundation metadata load timed out after 8 seconds"]
+            )
+        }
+        guard trackCount > 0 else {
+            return ResearchProbeOutcome(
+                accepted: false,
+                details: ["reason": "AVFoundation found no video track"]
+            )
+        }
+
+        progress(
+            "video-metadata-loaded",
+            ["durationSeconds": durationSeconds, "trackCount": trackCount]
+        )
+        let item = AVPlayerItem(asset: asset)
+        let player = AVPlayer(playerItem: item)
+        player.isMuted = true
+        progress("video-preroll-started", nil)
+        let preroll = await boundedPreroll(player)
+        player.pause()
+        player.replaceCurrentItem(with: nil)
+
+        var details: [String: Any] = [
+            "durationSeconds": durationSeconds,
+            "trackCount": trackCount,
+        ]
+        if let preroll {
+            details["prerollCompleted"] = preroll
+        } else {
+            details["prerollTimedOut"] = true
+        }
+        progress("video-preroll-returned", details)
+        return ResearchProbeOutcome(accepted: true, details: details)
+    }
+
+    /// The modern async AVAsset properties occasionally fail to call back on
+    /// a physical Watch. Race them against an independent queue timeout so the
+    /// harness still emits a final, classifiable result.
+    private static func boundedVideoMetadata(
+        _ asset: AVURLAsset
+    ) async -> VideoMetadataResult {
+        final class Gate: @unchecked Sendable {
+            private let lock = NSLock()
+            private var finished = false
+            private var continuation: CheckedContinuation<VideoMetadataResult, Never>?
+
+            func install(
+                _ value: CheckedContinuation<VideoMetadataResult, Never>
+            ) {
+                lock.lock()
+                continuation = value
+                lock.unlock()
+            }
+
+            func finish(_ value: VideoMetadataResult) {
+                lock.lock()
+                guard !finished else {
+                    lock.unlock()
+                    return
+                }
+                finished = true
+                let saved = continuation
+                continuation = nil
+                lock.unlock()
+                saved?.resume(returning: value)
+            }
+        }
+
+        let gate = Gate()
+        return await withCheckedContinuation { continuation in
+            gate.install(continuation)
+            Task {
+                do {
+                    let duration = try await asset.load(.duration)
+                    let tracks = try await asset.loadTracks(withMediaType: .video)
+                    let seconds = duration.seconds.isFinite ? duration.seconds : -1
+                    gate.finish(
+                        .loaded(durationSeconds: seconds, trackCount: tracks.count)
+                    )
+                } catch {
+                    gate.finish(.rejected((error as NSError).localizedDescription))
+                }
+            }
+            DispatchQueue.global(qos: .utility).asyncAfter(deadline: .now() + 8) {
+                gate.finish(.timedOut)
+            }
         }
     }
 
