@@ -4,6 +4,15 @@
 >
 > **Scope:** This document describes `Experiments/` on the `version/27` branch. Findings marked **Verified** are based on the device, tool output, or the watchOS 27.0.1 NanoTimeKit binary; **Hypothesis / Open** means not experimentally established.
 
+## Clean checkout and external artifacts
+
+Apple runtime files, extracted frameworks, disassembly dumps, compiled products,
+and Xcode user state are intentionally excluded. Device experiments resolve
+private binaries from Xcode DeviceSupport and generated products go to `/tmp` or
+the ignored `Experiments/Build/` directory. Do not copy a runtime, system app, or
+framework dump into Git. Backup, artifact, and recovery policy is documented in
+[Docs/REPOSITORY_CLEANUP.md](Docs/REPOSITORY_CLEANUP.md).
+
 ## Objective and current blocker
 
 The goal is a Pip-Boy-inspired **native, persistent** watch face hosted by the system, not a third-party application that happens to draw a clock while it is foregrounded.

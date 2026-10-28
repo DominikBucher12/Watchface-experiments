@@ -2,6 +2,14 @@
 
 This folder is an **architecture migration**, not a proven on-device system face implementation.
 
+## Generated files are not checked in
+
+This directory contains experiment sources and scripts. `Build/`, copied Apple
+runtimes/frameworks, disassembly dumps, dSYMs, bundles, dylibs, and Xcode user
+state are ignored. Recreate products with the documented scripts and keep
+DeviceSupport binaries in Xcode's directories. See
+[`Docs/REPOSITORY_CLEANUP.md`](../Docs/REPOSITORY_CLEANUP.md).
+
 ## What changed
 - `build-watchos-device.sh`: arm64 WATCHOS target; validates device NanoTimeKit / ClockKitUI using `vtool -arch arm64e`; links ImageIO and QuartzCore; produces four artifacts **unsigned**. It does not bundle or install any of them.
 - `MYClockFaceBridge.m`: builds for arm64 physical watchOS only; stale x86_64 guard and CPU check removed. **FAILS CLOSED** by default on watchOS 27: old 26.5 simulator UUID is not trusted, and method encodings have not been verified for this device ABI. The separate owned bridge inherits this guard.

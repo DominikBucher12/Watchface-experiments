@@ -25,6 +25,8 @@ Render a custom Pip-Boy-inspired native `NTKFace` / `NTKFaceView`, then determin
 
 ## Documents
 
+- [../REPOSITORY_CLEANUP.md](../REPOSITORY_CLEANUP.md) — clean-checkout artifact
+  policy, verified backups, and history-rewrite recovery instructions.
 - [BUILD_AND_REPRODUCTION.md](BUILD_AND_REPRODUCTION.md) — build/packaging flow, device checks, previous build failures.
 - [EXPERIMENT_LOG.md](EXPERIMENT_LOG.md) — chronological results and log evidence.
 - [ARGON_AND_MANAGER.md](ARGON_AND_MANAGER.md) — Argon architecture, symbols, selector ABI, limitations.
