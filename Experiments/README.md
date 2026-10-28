@@ -2,6 +2,16 @@
 
 This folder is an **architecture migration**, not a proven on-device system face implementation.
 
+## Bounded `.watchface` parser lab
+
+The `research/watchface-parser` branch adds
+`watchface-parser-lab.sh`. It inspects an owned system export, creates a small
+hash-locked corpus, and sends exactly one explicitly selected case through the
+public `CLKWatchFaceLibrary` API on an owned Watch. It never loops over cases or
+relaunches after a possible crash. Generated corpora and run evidence are
+ignored by Git. Follow
+[`Docs/WATCHFACE-BOUNTY-LAB.md`](../Docs/WATCHFACE-BOUNTY-LAB.md).
+
 ## Generated files are not checked in
 
 This directory contains experiment sources and scripts. `Build/`, copied Apple

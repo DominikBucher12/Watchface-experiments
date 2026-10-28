@@ -1,0 +1,157 @@
+# Bounded `.watchface` parser research lab
+
+Branch: `research/watchface-parser`
+
+This branch tests how the public watch-face import path handles a small set of
+malformed variants derived from a face exported by the owner of the test
+device. It is intended for good-faith Apple Security Bounty research on an
+owned Watch. It does not generate executable payloads, bypass signing, escape a
+sandbox, or automatically fuzz a device.
+
+Apple explicitly includes the latest public and beta watchOS releases in its
+[Security Bounty guidelines](https://security.apple.com/bounty/guidelines/).
+Its [terms](https://security.apple.com/terms-and-conditions/) prohibit affecting
+devices or data without permission. Do not test a shared, borrowed, production,
+or another person's Watch.
+
+## Safety model
+
+- The input must be a locally owned `.watchface` export and a ZIP-compatible
+  archive smaller than 64 MiB.
+- Archive paths, symlinks, encryption, entry count, expanded size, and
+  compression ratio are validated before any corpus is generated.
+- Mutations are deterministic and bounded: a single bit flip, half truncation,
+  entry removal, an unknown metadata key/entry, and two archive-tail cases.
+- The physical runner requires `--owned-device`, resolves every case through a
+  hash-locked manifest, embeds exactly one case, and launches the importer once.
+- A timeout is never retried automatically. Preserve evidence and inspect the
+  device before doing anything else.
+- Corpora and run evidence live under ignored `Corpus/` and `Runs/`
+  directories. A sysdiagnose can contain private account/device metadata;
+  review it before sharing it.
+
+## 1. Export and inspect a control face
+
+Configure a normal Apple system face, optionally add **Pip-Boy Monitor**, and
+use the system Share action to export it. Keep the export private because its
+complication configuration may contain personal data.
+
+On the Mac with the repository:
+
+```sh
+git switch research/watchface-parser
+git pull --ff-only
+bash Experiments/watchface-parser-lab.sh inspect \
+  ~/Downloads/Owned-PipBoy.watchface
+```
+
+Inspection is offline and prints entry names, classifications, sizes, and
+SHA-256 hashes. It does not extract or import the archive.
+
+## 2. Generate and verify the bounded corpus
+
+```sh
+bash Experiments/watchface-parser-lab.sh generate \
+  ~/Downloads/Owned-PipBoy.watchface
+```
+
+The command prints the new corpus directory. Use that exact path below:
+
+```sh
+CORPUS='Experiments/WatchFaceParser/Corpus/Owned-PipBoy-YYYYMMDD-HHMMSS'
+bash Experiments/watchface-parser-lab.sh verify "$CORPUS"
+bash Experiments/watchface-parser-lab.sh list "$CORPUS"
+```
+
+`manifest.json` records the source hash, mutation description, target entry,
+case hash, size, and whether Python's ZIP parser can still open the result.
+
+## 3. Establish the baseline
+
+Use a non-primary Watch when possible. Keep it unlocked, charged, paired, and
+visible in Xcode's Devices and Simulators window. The first device action must
+be the byte-identical baseline:
+
+```sh
+bash Experiments/watchface-parser-lab.sh run "$CORPUS" 000-baseline \
+  --owned-device 2>&1 | tee ~/Desktop/watchface-baseline.txt
+```
+
+The runner:
+
+1. verifies the selected case hash;
+2. builds and signs the public complication host with that case embedded;
+3. verifies the embedded hash and app signature;
+4. installs the app and launches it exactly once;
+5. calls public `CLKWatchFaceLibrary.addWatchFace` from the visible app;
+6. downloads a run-ID-matched JSON result from the app container.
+
+Passing `--owned-device` is an explicit confirmation, not a device bypass. Use
+`--device COREDEVICE-ID` if automatic Watch selection is ambiguous.
+
+Do not continue unless the baseline returns a complete result and the Watch is
+responsive. A successful baseline may add another copy of the exported face to
+the face library; remove test copies manually when the run is finished.
+
+## 4. Run one mutation
+
+Choose one case from `list`, preferably beginning with a syntactically valid,
+low-impact case such as `104-metadata-unknown-key` when present or
+`300-extra-unknown-entry`:
+
+```sh
+bash Experiments/watchface-parser-lab.sh run "$CORPUS" \
+  300-extra-unknown-entry --owned-device \
+  2>&1 | tee ~/Desktop/watchface-one-case.txt
+```
+
+Review the JSON and Watch state before selecting another case. Do not script a
+loop around `run`.
+
+Expected safe outcomes are either a successful import or a completed error
+from `CLKWatchFaceLibrary`. Neither result is a vulnerability by itself. An app
+timeout can also be an API/UI lifecycle issue; it is not proof that a system
+process crashed.
+
+## 5. Preserve evidence after an abnormal result
+
+If the runner prints `PARSER_RESULT=TIMEOUT`, do not immediately repeat the
+case. Note the exact time, confirm whether the Watch and paired iPhone remain
+responsive, and keep the printed `EVIDENCE` directory. Once the device has
+recovered, fetch the last app record without importing again:
+
+```sh
+bash Experiments/watchface-parser-lab.sh result --owned-device
+```
+
+Collect a sysdiagnose only when the abnormal behavior is worth preserving:
+
+```sh
+bash Experiments/watchface-parser-lab.sh diagnose --owned-device \
+  --output 'Experiments/WatchFaceParser/Runs/CASE-RUN/sysdiagnose'
+```
+
+Do not publish the corpus, crash details, or sysdiagnose before Apple has fixed
+an eligible issue. Before reporting, establish at least:
+
+- exact hardware, watchOS build, Xcode version, and source/case SHA-256;
+- a reliable minimal reproduction on the latest watchOS;
+- which process failed, with a symbolicated crash log when available;
+- the security boundary or user data affected, beyond an ordinary rejection or
+  denial of service;
+- numbered reproduction steps and a nondestructive PoC.
+
+A rejected malformed face, a crash confined to WatchFaceLab, or unsupported
+custom-face rendering is not by itself evidence of a bounty-eligible issue.
+Apple warns against submitting theoretical or AI-generated reports without
+human validation; keep the report factual and based on captured evidence.
+
+## Local validation
+
+The offline generator has unit tests independent of a physical Watch:
+
+```sh
+python3 -m unittest discover \
+  -s Experiments/WatchFaceParser/Tests -v
+bash -n Experiments/watchface-parser-lab.sh
+```

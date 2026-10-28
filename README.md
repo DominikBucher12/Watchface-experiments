@@ -1,5 +1,11 @@
 # Watchface Experiments — watchOS 27 (device / arm64)
 
+> **`research/watchface-parser` branch:** Bounded, owner-device robustness
+> testing for a system-exported `.watchface`. Start with
+> `bash Experiments/watchface-parser-lab.sh generate OWNED.watchface`, run the
+> byte-identical baseline first, and advance only one explicit case at a time.
+> See [Docs/WATCHFACE-BOUNTY-LAB.md](Docs/WATCHFACE-BOUNTY-LAB.md).
+
 > **`complication` branch:** This branch implements the stock-device fallback:
 > a public WidgetKit Pip-Boy complication embedded in a clean watchOS host app.
 > Install it with `bash Experiments/watchos27-complication.sh`, then select

@@ -268,7 +268,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "seed=\"$SRCROOT/WatchFaceLab/Resources/PipBoy.watchface\"\nif [ -f \"$seed\" ]; then\n  cp \"$seed\" \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/PipBoy.watchface\"\n  echo \"Embedded system-exported PipBoy.watchface\"\nelse\n  echo \"No exported PipBoy.watchface seed; use the manual complication setup first\"\nfi\n";
+			shellScript = "seed=\"${WATCHFACELAB_SEED_FACE:-$SRCROOT/WatchFaceLab/Resources/PipBoy.watchface}\"\ncase \"$seed\" in\n  /*) ;;\n  *) seed=\"$SRCROOT/$seed\" ;;\nesac\nif [ -f \"$seed\" ]; then\n  cp \"$seed\" \"$TARGET_BUILD_DIR/$UNLOCALIZED_RESOURCES_FOLDER_PATH/PipBoy.watchface\"\n  echo \"Embedded system-exported watchface seed: $seed\"\nelse\n  echo \"No exported PipBoy.watchface seed; use the manual complication setup first\"\nfi\n";
 		};
 		4E7CD090308AA3E700DFEB93 /* Run build-local-face-bundle */ = {
 			isa = PBXShellScriptBuildPhase;

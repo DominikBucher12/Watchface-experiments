@@ -55,6 +55,8 @@ Experiments/ClockFaceLab/Analysis/*.asm.txt
 *.ips
 *.profraw
 *.profdata
+*.pyc
+__pycache__/
 *.tmp
 *.temp
 *.swp
@@ -63,6 +65,10 @@ Experiments/ClockFaceLab/Analysis/*.asm.txt
 .env
 .env.*
 *.before-*
+
+# Generated watchface parser corpus and physical-device run evidence
+/Experiments/WatchFaceParser/Corpus/
+/Experiments/WatchFaceParser/Runs/
 
 # Historical root-level scratch dumps
 /another.txt
