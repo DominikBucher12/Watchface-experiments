@@ -26,6 +26,8 @@ bash Experiments/bootstrap-watchos27-device.sh
 
 `--build-only` produces and verifies the signed app without requiring the Watch
 to be online. `--device COREDEVICE-ID` selects a particular available Watch.
+The preflight rejects an active Xcode whose watchOS SDK is older than the 27.0
+deployment target; select the intended Xcode with `xcode-select` first.
 The resolver chooses the newest matching watchOS DeviceSupport pair by default;
 set `WATCH_DEVICE_SUPPORT_FILTER=24R365` or explicit binary variables when a
 specific build is required.

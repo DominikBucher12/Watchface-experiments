@@ -50,6 +50,12 @@ developer_dir="$(xcode-select -p 2>/dev/null || true)"
 [[ -x "$developer_dir/usr/bin/xcodebuild" ]] ||
     fail 'select a full Xcode installation with xcode-select'
 xcrun --sdk watchos --show-sdk-path >/dev/null
+sdk_version="$(xcrun --sdk watchos --show-sdk-version)"
+required_version="${WATCHOS_DEPLOYMENT_TARGET:-27.0}"
+if awk -v sdk="$sdk_version" -v required="$required_version" \
+    'BEGIN { exit !((sdk + 0) < (required + 0)) }'; then
+    fail "active Xcode provides watchOS SDK $sdk_version, but this branch requires $required_version or newer"
+fi
 
 . "$experiments_dir/resolve-watchos-device-frameworks.sh"
 watchfacelab_resolve_device_frameworks
@@ -65,7 +71,7 @@ fi
 
 if [[ "$check_only" == "1" ]]; then
     printf 'CHECK=PASS SDK=%s DEVICE=%s\n' \
-        "$(xcrun --sdk watchos --show-sdk-version)" "${device_id:-unavailable}"
+        "$sdk_version" "${device_id:-unavailable}"
     exit 0
 fi
 
