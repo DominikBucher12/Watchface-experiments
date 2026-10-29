@@ -1,5 +1,12 @@
 # Watchface Experiments — watchOS 27 (device / arm64)
 
+> **Kernel-CVE research branch:** the isolated, read-only phase 0/1 workflow
+> for CVE-2026-112665, CVE-2026-112576, CVE-2026-84495, and
+> CVE-2026-112474 is documented in
+> [`Docs/watchos27/KERNEL_CVE_LAB.md`](Docs/watchos27/KERNEL_CVE_LAB.md).
+> Start with `bash Experiments/watchos27-kernel-cve-lab.sh doctor`; generated
+> manifests and device metadata are ignored by Git.
+
 > **Series 9 CVE batch:** run
 > `bash Experiments/run-all-s9-cve-probes.sh --owned-device` to prepare the
 > corpus, build once, and execute all 16 guarded ImageIO, font, audio, and video

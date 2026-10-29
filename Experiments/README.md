@@ -2,6 +2,23 @@
 
 This folder is an **architecture migration**, not a proven on-device system face implementation.
 
+## Kernel-CVE applicability lab
+
+`watchos27-kernel-cve-lab.sh` is the isolated phase 0/1 entry point for the
+four public watchOS 27.2 kernel advisories under study. Its initial commands
+only inspect local DeviceSupport metadata or query an explicitly selected
+owned device; they do not install a probe or exercise a kernel trigger.
+
+```sh
+bash Experiments/watchos27-kernel-cve-lab.sh plan
+bash Experiments/watchos27-kernel-cve-lab.sh doctor
+bash Experiments/watchos27-kernel-cve-lab.sh bootstrap
+```
+
+Follow
+[`Docs/watchos27/KERNEL_CVE_LAB.md`](../Docs/watchos27/KERNEL_CVE_LAB.md)
+for explicit DeviceSupport roots, generated evidence, and decision gates.
+
 ## Bounded `.watchface` parser lab
 
 The `research/watchface-parser` branch adds

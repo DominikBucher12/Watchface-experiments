@@ -74,6 +74,9 @@ __pycache__/
 /Experiments/CVEProbes/Corpus/
 /Experiments/CVEProbes/Runs/
 
+# Generated watchOS kernel-CVE manifests, diffs, and device metadata
+/Experiments/KernelCVE/Runs/
+
 # Historical root-level scratch dumps
 /another.txt
 /dalsi.txt
