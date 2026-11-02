@@ -10,6 +10,15 @@ Minimal, clean-room **watchOS 26.5** research starter for an **Intel / x86_64** 
 https://github.com/user-attachments/assets/175f2828-da2d-4ec3-95e8-6220a7717559
 
 
+
+## SUPPORT
+
+If you want to support this project, feel free to send some coffee money to [this link](https://www.paypal.me/develodom) 
+
+If you don't want to spend money, you can still support me if you will share this repository with your colleagues, fellow hackers and tell them how nice it is and
+how it improved your life... Also you can participate with trying to implement watchOS Jailbreak or maybe implement finally some custom watchFaces!
+
+
 ## Clean checkout
 
 Generated builds, copied Apple runtimes/frameworks, disassembly dumps, `.app`
