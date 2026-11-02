@@ -2,6 +2,8 @@
 
 Minimal, clean-room **watchOS 26.5** research starter for an **Intel / x86_64** simulator. No dependencies, CocoaPods, Carthage, or XcodeGen.
 
+(This also should be runnable on watchOS jailbreak 27.0.1 if there is any :) ) 
+
 ## Clean checkout
 
 Generated builds, copied Apple runtimes/frameworks, disassembly dumps, `.app`
