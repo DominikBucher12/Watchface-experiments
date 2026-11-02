@@ -4,6 +4,12 @@ Minimal, clean-room **watchOS 26.5** research starter for an **Intel / x86_64** 
 
 (This also should be runnable on watchOS jailbreak 27.0.1 if there is any :) ) 
 
+
+
+
+https://github.com/user-attachments/assets/175f2828-da2d-4ec3-95e8-6220a7717559
+
+
 ## Clean checkout
 
 Generated builds, copied Apple runtimes/frameworks, disassembly dumps, `.app`
