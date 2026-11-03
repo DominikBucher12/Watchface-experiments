@@ -47,6 +47,20 @@ Pip-Boy face should then appear.
 It does not modify the Apple runtime. Build products and the hybrid root live in
 `/tmp`; the only persistent object it creates is the dedicated Simulator device.
 
+Change the displayed face title after bootstrap with:
+
+```sh
+bash Experiments/set-watchface-title.sh "VAULT BOY"
+```
+
+The script auto-detects the research simulator and verifies the new title. Pass
+the simulator UUID as a second argument only when more than one research
+simulator exists. To set a different default while bootstrapping, run:
+
+```sh
+bash Experiments/bootstrap-watchos27-simulator.sh --title "PIP-BOY 3000"
+```
+
 ## Preflight and recovery
 
 Check prerequisites without creating or booting a device:

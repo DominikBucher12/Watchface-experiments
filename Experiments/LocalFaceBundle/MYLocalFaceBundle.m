@@ -25,7 +25,9 @@
 }
 - (NSString *)galleryTitleForDevice:(CLKDevice *)device {
     (void)device;
-    return @"Custom Face PoC";
+    NSString *configuredTitle = NSProcessInfo.processInfo.environment[
+        @"WATCHFACELAB_FACE_TITLE"];
+    return configuredTitle.length > 0 ? configuredTitle : @"VAULT BOY";
 }
 - (NSString *)galleryDescriptionForDevice:(CLKDevice *)device {
     (void)device;

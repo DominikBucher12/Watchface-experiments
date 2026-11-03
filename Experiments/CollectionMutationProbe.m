@@ -69,7 +69,10 @@ int main(int argc, const char *argv[]) {
     @autoreleasepool {
         NSString *mode = argc == 2 ? [NSString stringWithUTF8String:argv[1]] : nil;
         NSDictionary *environment = NSProcessInfo.processInfo.environment;
-        NSString *root = environment[@"IPHONE_SIMULATOR_ROOT"];
+        NSString *root = environment[@"WATCHFACELAB_OVERLAY_ROOT"] ?: environment[@"IPHONE_SIMULATOR_ROOT"];
+        if (environment[@"WATCHFACELAB_OVERLAY_ROOT"]) {
+            setenv("IPHONE_SIMULATOR_ROOT", root.fileSystemRepresentation, 1);
+        }
         NSString *marker = environment[@"WATCHFACELAB_SYSTEM_DISCOVERY_PROBE"];
         NSString *bundlePath = [root stringByAppendingPathComponent:
             @"System/Library/NanoTimeKit/FaceBundles/MYLocalFaceBundle.bundle"];

@@ -7,6 +7,7 @@ runtime_major="${WATCHFACELAB_RUNTIME_MAJOR:-27}"
 runtime_id="${WATCHFACELAB_RUNTIME_ID:-}"
 device_type="${WATCHFACELAB_DEVICE_TYPE:-}"
 device_name="${WATCHFACELAB_DEVICE_NAME:-WatchFaceLab27 Research}"
+face_title="${WATCHFACELAB_FACE_TITLE:-VAULT BOY}"
 mode="run"
 
 usage() {
@@ -22,11 +23,13 @@ Options:
   --runtime IDENTIFIER    Use this CoreSimulator runtime identifier.
   --device-type ID        Use this CoreSimulator Apple Watch device type.
   --name NAME             Override the dedicated simulator name.
+  --title TITLE           Set the custom face's displayed title.
   -h, --help              Show this help.
 
 Environment equivalents:
   WATCHFACELAB_RUNTIME_ID, WATCHFACELAB_DEVICE_TYPE,
-  WATCHFACELAB_DEVICE_NAME, WATCHFACELAB_RUNTIME_MAJOR
+  WATCHFACELAB_DEVICE_NAME, WATCHFACELAB_RUNTIME_MAJOR,
+  WATCHFACELAB_FACE_TITLE
 
 Run as the logged-in macOS user. Never use sudo.
 EOF
@@ -66,6 +69,11 @@ while [[ $# -gt 0 ]]; do
             device_name="$2"
             shift 2
             ;;
+        --title)
+            [[ $# -ge 2 ]] || fail "--title needs a value"
+            face_title="$2"
+            shift 2
+            ;;
         -h|--help)
             usage
             exit 0
@@ -82,6 +90,10 @@ if [[ "${EUID:-$(id -u)}" == "0" ]]; then
 fi
 [[ "$runtime_major" =~ ^[0-9]+$ ]] ||
     fail "WATCHFACELAB_RUNTIME_MAJOR must be a numeric major version"
+if [[ -z "$face_title" || "$face_title" == *$'\n'* ||
+      "$face_title" == *$'\r'* || ${#face_title} -gt 64 ]]; then
+    fail "face title must contain 1-64 characters on one line"
+fi
 [[ "$(uname -s)" == "Darwin" ]] || fail "this experiment requires macOS"
 command -v xcrun >/dev/null 2>&1 ||
     fail "xcrun is unavailable; install Xcode and select it with xcode-select"
@@ -162,7 +174,8 @@ printf '%s\n' \
     "Xcode: $developer_dir" \
     "SDK: watchsimulator $sdk_version" \
     "Runtime: $runtime_line" \
-    "Device name: $device_name"
+    "Device name: $device_name" \
+    "Face title: $face_title"
 
 if [[ "$mode" == "check" ]]; then
     if [[ -n "$simulator_udid" ]]; then
@@ -243,7 +256,7 @@ if [[ "$mode" == "create" ]]; then
 fi
 
 say "Building and loading the Pip-Boy face"
-bash "$quickstart" "$simulator_udid"
+WATCHFACELAB_FACE_TITLE="$face_title" bash "$quickstart" "$simulator_udid"
 
 printf '\n%s\n' \
     "BOOTSTRAP=PASS udid=$simulator_udid" \

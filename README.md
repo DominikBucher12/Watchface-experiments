@@ -27,6 +27,24 @@ system-loader experiment:
 bash Experiments/bootstrap-watchos27-simulator.sh
 ```
 
+After bootstrap, change the displayed custom-face title without rebuilding:
+
+```sh
+bash Experiments/set-watchface-title.sh "VAULT BOY"
+```
+
+For a fresh setup, choose it immediately with:
+
+```sh
+bash Experiments/bootstrap-watchos27-simulator.sh --title "VAULT BOY"
+```
+
+The title script auto-detects the dedicated research simulator, restarts the
+affected simulator services, and verifies that ClockFace resolved the new
+title. See
+[Docs/watchos27/SIMULATOR_SYSTEM_LOAD.md](Docs/watchos27/SIMULATOR_SYSTEM_LOAD.md#changing-the-face-title)
+for custom bootstrap defaults and multi-simulator usage.
+
 The bootstrap validates Xcode and the installed watchOS 27 runtime, creates or
 reuses a dedicated `WatchFaceLab27 Research` simulator, then invokes the guarded
 loader. It derives architecture and deployment target from the selected runtime,

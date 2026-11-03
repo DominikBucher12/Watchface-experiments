@@ -74,6 +74,7 @@ fi
 printf '%s\n' \
     "WatchFaceLab quickstart (simulator-only research)" \
     "Device: $device_line" \
+    "Face title: ${WATCHFACELAB_FACE_TITLE:-VAULT BOY}" \
     "No Apple runtime file will be modified."
 
 if [[ "$device_line" != *Booted* ]]; then
@@ -126,6 +127,8 @@ printf '\n%s\n' \
     "READY: the Pip-Boy face is installed, selected, and animating." \
     "The simulated display may be asleep after ClockFace restarts." \
     "Click the Crown button in Simulator once to wake it; press it again only if an app is covering the face." \
+    "Change the title later with:" \
+    "  bash Experiments/set-watchface-title.sh \"NEW TITLE\" $simulator_udid" \
     "Overlay: $overlay_root" \
     "" \
     "Clean rollback:" \

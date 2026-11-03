@@ -89,6 +89,45 @@ index 1; watchOS runtime defaults may contain a different number of faces. The
 simulated display can be asleep immediately after ClockFace restarts. Click the
 Simulator window's **Crown** button once to wake it.
 
+## Changing the face title
+
+watchOS builds a localization key from the face style. Style 44 therefore asks
+NanoTimeKit for `FACE_STYLE_44_IN_TITLE_CASE`. Because the stock runtime has no
+value for this experimental style, it normally displays the key itself. The
+runtime bootstrap intercepts only style 44's two title keys and returns the
+configured custom title. It also exposes the same value through the local face
+bundle's gallery title.
+
+With the research simulator booted and the custom face loaded, run:
+
+```sh
+bash Experiments/set-watchface-title.sh "VAULT BOY"
+```
+
+The script auto-detects a single available `WatchFaceLab Research` simulator,
+updates its launchd environment, restarts `ClockFace` and `nanotimekitd`, opens
+Simulator, and waits for a log confirmation that ClockFace resolved the new
+title. Titles must contain 1–64 characters on one line.
+
+If more than one research simulator exists, pass the intended UUID:
+
+```sh
+bash Experiments/set-watchface-title.sh "PIP-BOY 3000" SIMULATOR-UUID
+```
+
+To choose the title during a complete bootstrap, use `--title`:
+
+```sh
+bash Experiments/bootstrap-watchos27-simulator.sh --title "PIP-BOY 3000"
+```
+
+For a direct quickstart, set `WATCHFACELAB_FACE_TITLE` on that command.
+
+The default is `VAULT BOY`. The selected title remains in the booted
+simulator's launchd environment and is inherited by restarted ClockFace
+processes. A later bootstrap or quickstart replaces it with the requested title
+or the default. Clean rollback removes the title variable.
+
 Rollback is printed after a successful run and has this form:
 
 ```sh

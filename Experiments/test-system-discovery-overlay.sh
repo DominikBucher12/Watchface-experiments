@@ -15,6 +15,7 @@ usage() {
         "       $0 show <research-simulator-udid> <face-index>" \
         "       $0 remove <research-simulator-udid>" \
         "       $0 status <research-simulator-udid>" \
+        "       $0 title <research-simulator-udid> <display-title>" \
         "       $0 rollback <research-simulator-udid>"
 }
 
@@ -34,8 +35,16 @@ if [[ "$device_line" != *Research* && "${WATCHFACELAB_ALLOW_NON_RESEARCH:-0}" !=
 fi
 
 runtime_root() {
-    xcrun simctl spawn "$simulator_udid" /usr/bin/env |
-        sed -n 's/^IPHONE_SIMULATOR_ROOT=//p' | head -1
+    # watchOS 27.2 rejects spawning /usr/bin/env with LaunchdSimError 111,
+    # while simctl getenv still exposes the runtime root reliably.
+    local runtime=""
+    runtime="$(xcrun simctl spawn "$simulator_udid" /usr/bin/env 2>/dev/null |
+        sed -n 's/^IPHONE_SIMULATOR_ROOT=//p' | head -1 || true)"
+    if [[ -n "$runtime" ]]; then
+        printf '%s\n' "$runtime"
+        return
+    fi
+    xcrun simctl getenv "$simulator_udid" IPHONE_SIMULATOR_ROOT
 }
 
 job_pid() {
@@ -122,6 +131,8 @@ case "$action" in
                     WATCHFACELAB_SYSTEM_DISCOVERY_PROBE || true
                 xcrun simctl spawn "$simulator_udid" launchctl unsetenv \
                     WATCHFACELAB_OVERLAY_ROOT || true
+                xcrun simctl spawn "$simulator_udid" launchctl unsetenv \
+                    WATCHFACELAB_FACE_TITLE || true
                 xcrun simctl spawn "$simulator_udid" launchctl kickstart -k \
                     system/com.apple.nanotimekitd || true
                 xcrun simctl terminate "$simulator_udid" \
@@ -133,6 +144,8 @@ case "$action" in
             WATCHFACELAB_OVERLAY_ROOT "$overlay_root"
         xcrun simctl spawn "$simulator_udid" launchctl setenv \
             WATCHFACELAB_SYSTEM_DISCOVERY_PROBE 1
+        xcrun simctl spawn "$simulator_udid" launchctl setenv \
+            WATCHFACELAB_FACE_TITLE "${WATCHFACELAB_FACE_TITLE:-VAULT BOY}"
         xcrun simctl spawn "$simulator_udid" launchctl setenv \
             DYLD_INSERT_LIBRARIES "$bootstrap"
         xcrun simctl spawn "$simulator_udid" launchctl kickstart -k \
@@ -186,15 +199,17 @@ case "$action" in
         printf 'WATCHFACELAB_OVERLAY_ROOT=%s\n' "$overlay_root"
         printf 'WATCHFACELAB_SYSTEM_DISCOVERY_PROBE=%s\n' \
             "$(xcrun simctl spawn "$simulator_udid" launchctl getenv WATCHFACELAB_SYSTEM_DISCOVERY_PROBE || true)"
+        printf 'WATCHFACELAB_FACE_TITLE=%s\n' \
+            "$(xcrun simctl spawn "$simulator_udid" launchctl getenv WATCHFACELAB_FACE_TITLE || true)"
         xcrun simctl spawn "$simulator_udid" launchctl list |
             grep -E 'com.apple.nanotimekitd|UIKitApplication:com.apple.clockface' || true
         probe="$build_root/SystemDiscoveryProbe"
         runtime="$(runtime_root)"
         if [[ -x "$probe" && -n "$overlay_root" ]]; then
-            xcrun simctl spawn "$simulator_udid" /usr/bin/env \
-                "DYLD_ROOT_PATH=$runtime" \
-                "IPHONE_SIMULATOR_ROOT=$overlay_root" \
-                WATCHFACELAB_SYSTEM_DISCOVERY_PROBE=1 \
+            SIMCTL_CHILD_DYLD_ROOT_PATH="$runtime" \
+                SIMCTL_CHILD_WATCHFACELAB_OVERLAY_ROOT="$overlay_root" \
+                SIMCTL_CHILD_WATCHFACELAB_SYSTEM_DISCOVERY_PROBE=1 \
+                xcrun simctl spawn "$simulator_udid" \
                 "$probe" 2>/tmp/WatchFaceLabSystemDiscoveryProbe.stderr || true
         fi
         xcrun simctl spawn "$simulator_udid" log show \
@@ -215,10 +230,10 @@ case "$action" in
             printf 'ERROR: overlay is not active\n' >&2
             exit 72
         fi
-        xcrun simctl spawn "$simulator_udid" /usr/bin/env \
-            "DYLD_ROOT_PATH=$runtime" \
-            "IPHONE_SIMULATOR_ROOT=$overlay_root" \
-            WATCHFACELAB_SYSTEM_DISCOVERY_PROBE=1 \
+        SIMCTL_CHILD_DYLD_ROOT_PATH="$runtime" \
+            SIMCTL_CHILD_WATCHFACELAB_OVERLAY_ROOT="$overlay_root" \
+            SIMCTL_CHILD_WATCHFACELAB_SYSTEM_DISCOVERY_PROBE=1 \
+            xcrun simctl spawn "$simulator_udid" \
             "$mutation_probe" "$action"
         ;;
 
@@ -272,15 +287,62 @@ case "$action" in
         fi
         ;;
 
+    title)
+        face_title="$overlay_root"
+        if [[ -z "$face_title" || "$face_title" == *$'\n'* ||
+              "$face_title" == *$'\r'* || ${#face_title} -gt 64 ]]; then
+            printf 'ERROR: title must contain 1-64 characters on one line\n' >&2
+            exit 77
+        fi
+        active_overlay="$(xcrun simctl spawn "$simulator_udid" launchctl getenv WATCHFACELAB_OVERLAY_ROOT || true)"
+        bootstrap="$build_root/SystemRootBootstrap.dylib"
+        if [[ -z "$active_overlay" || ! -d "$active_overlay" || ! -f "$bootstrap" ]]; then
+            printf 'ERROR: active overlay or bootstrap build is missing; run quickstart first\n' >&2
+            exit 75
+        fi
+        cleanup_title() {
+            xcrun simctl spawn "$simulator_udid" launchctl unsetenv \
+                DYLD_INSERT_LIBRARIES || true
+        }
+        trap cleanup_title EXIT
+        xcrun simctl spawn "$simulator_udid" launchctl setenv \
+            WATCHFACELAB_FACE_TITLE "$face_title"
+        xcrun simctl spawn "$simulator_udid" launchctl setenv \
+            DYLD_INSERT_LIBRARIES "$bootstrap"
+        xcrun simctl spawn "$simulator_udid" launchctl kickstart -k \
+            system/com.apple.nanotimekitd
+        xcrun simctl terminate "$simulator_udid" com.apple.clockface
+        sleep 2
+        cleanup_title
+        trap - EXIT
+        title_logs=""
+        for _attempt in {1..15}; do
+            title_logs="$(xcrun simctl spawn "$simulator_udid" log show \
+                --last 1m --info --debug --style compact \
+                --predicate 'eventMessage CONTAINS "WATCHFACELAB_FACE_TITLE"')"
+            if grep -Fq "WATCHFACELAB_FACE_TITLE key=FACE_STYLE_44_IN_TITLE_CASE value=$face_title" \
+                <<<"$title_logs"; then
+                break
+            fi
+            sleep 1
+        done
+        if ! grep -Fq "WATCHFACELAB_FACE_TITLE key=FACE_STYLE_44_IN_TITLE_CASE value=$face_title" \
+            <<<"$title_logs"; then
+            printf 'ERROR: ClockFace did not confirm the requested title\n' >&2
+            exit 78
+        fi
+        printf 'TITLE=PASS value=%s\n' "$face_title"
+        ;;
+
     rollback)
         mutation_probe="$build_root/CollectionMutationProbe"
         overlay_root="$(xcrun simctl spawn "$simulator_udid" launchctl getenv WATCHFACELAB_OVERLAY_ROOT || true)"
         runtime="$(runtime_root)"
         if [[ -x "$mutation_probe" && -n "$overlay_root" ]]; then
-            xcrun simctl spawn "$simulator_udid" /usr/bin/env \
-                "DYLD_ROOT_PATH=$runtime" \
-                "IPHONE_SIMULATOR_ROOT=$overlay_root" \
-                WATCHFACELAB_SYSTEM_DISCOVERY_PROBE=1 \
+            SIMCTL_CHILD_DYLD_ROOT_PATH="$runtime" \
+                SIMCTL_CHILD_WATCHFACELAB_OVERLAY_ROOT="$overlay_root" \
+                SIMCTL_CHILD_WATCHFACELAB_SYSTEM_DISCOVERY_PROBE=1 \
+                xcrun simctl spawn "$simulator_udid" \
                 "$mutation_probe" remove || true
         fi
         xcrun simctl spawn "$simulator_udid" launchctl unsetenv \
@@ -289,6 +351,8 @@ case "$action" in
             WATCHFACELAB_SYSTEM_DISCOVERY_PROBE || true
         xcrun simctl spawn "$simulator_udid" launchctl unsetenv \
             WATCHFACELAB_OVERLAY_ROOT || true
+        xcrun simctl spawn "$simulator_udid" launchctl unsetenv \
+            WATCHFACELAB_FACE_TITLE || true
         xcrun simctl spawn "$simulator_udid" launchctl unsetenv \
             WATCHFACELAB_TEST || true
         xcrun simctl spawn "$simulator_udid" launchctl kickstart -k \
