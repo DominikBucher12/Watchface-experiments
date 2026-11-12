@@ -49,7 +49,9 @@ The bootstrap validates Xcode and the installed watchOS 27 runtime, creates or
 reuses a dedicated `WatchFaceLab27 Research` simulator, then invokes the guarded
 loader. It derives architecture and deployment target from the selected runtime,
 installs the face through the collection service, and switches the live ClockFace
-UI. The complete port was verified on a clean watchOS 26.5 x86_64 simulator,
+UI. It installs separate green and red Vault Boy entries in the face row; the red
+variant recolors the animation and every interface accent. The complete port was
+verified on a clean watchOS 26.5 x86_64 simulator,
 including the animated 32-frame Pip-Boy renderer.
 This Mac currently has no watchOS 27 Simulator runtime, so the final 27.x runtime
 execution remains pending. See

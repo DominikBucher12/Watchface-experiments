@@ -146,7 +146,8 @@ codesign --force --sign - "$output_dir/MYCustomFaceExperiment.dylib"
 printf '%s\n' "$output_dir/MYCustomFaceExperiment.dylib"
 
 bundle_dir="$output_dir/FaceBundles/MYLocalFaceBundle.bundle"
-step "2/7 local face bundle"
+red_bundle_dir="$output_dir/FaceBundles/MYRedLocalFaceBundle.bundle"
+step "2/7 local face bundles"
 if [[ -d "$bundle_dir" ]]; then
     rm -rf "$bundle_dir"
 fi
@@ -173,6 +174,26 @@ codesign --verify --deep --strict "$bundle_dir"
 codesign -d --verbose=4 "$bundle_dir" 2>&1 |
     grep 'Info.plist entries=' >/dev/null
 printf '%s\n' "$bundle_dir"
+
+if [[ -d "$red_bundle_dir" ]]; then
+    rm -rf "$red_bundle_dir"
+fi
+mkdir -p "$red_bundle_dir/Assets"
+cp "$experiment_dir/RedLocalFaceBundle/Info.plist" "$red_bundle_dir/Info.plist"
+/usr/libexec/PlistBuddy -c "Set :MinimumOSVersion $deployment_target" \
+    "$red_bundle_dir/Info.plist"
+cp "$animation_source" "$red_bundle_dir/Assets/pip-boy-reference.gif"
+xcrun --sdk watchsimulator clang "${common_flags[@]}" -g -bundle \
+    "$experiment_dir/RedLocalFaceBundle/MYRedLocalFaceBundle.m" \
+    "$output_dir/MYCustomFaceExperiment.dylib" "${private_link_inputs[@]}" \
+    -framework Foundation -framework UIKit \
+    -Wl,-rpath,@loader_path/../.. \
+    -o "$red_bundle_dir/MYRedLocalFaceBundle"
+codesign --force --sign - "$red_bundle_dir"
+codesign --verify --deep --strict "$red_bundle_dir"
+codesign -d --verbose=4 "$red_bundle_dir" 2>&1 |
+    grep 'Info.plist entries=' >/dev/null
+printf '%s\n' "$red_bundle_dir"
 
 step "3/7 discovery probe"
 xcrun --sdk watchsimulator clang "${common_flags[@]}" -fblocks \

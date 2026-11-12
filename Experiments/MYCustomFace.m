@@ -2,15 +2,22 @@
 #import "MYCustomFace.h"
 #import <ImageIO/ImageIO.h>
 #import <QuartzCore/QuartzCore.h>
+#import <stdint.h>
+#import <stdlib.h>
 
 static UIColor *MYPipGreen(void) {
     return [UIColor colorWithRed:0.32 green:1.0 blue:0.14 alpha:1.0];
 }
 
-static UILabel *MYPipLabel(NSString *text, CGFloat size, NSTextAlignment alignment) {
+static UIColor *MYPipRed(void) {
+    return [UIColor colorWithRed:1.0 green:0.12 blue:0.08 alpha:1.0];
+}
+
+static UILabel *MYPipLabel(NSString *text, CGFloat size, NSTextAlignment alignment,
+                           UIColor *color) {
     UILabel *label = [[UILabel alloc] initWithFrame:CGRectZero];
     label.text = text;
-    label.textColor = MYPipGreen();
+    label.textColor = color;
     label.textAlignment = alignment;
     label.font = [UIFont monospacedSystemFontOfSize:size weight:UIFontWeightMedium];
     label.adjustsFontSizeToFitWidth = YES;
@@ -19,18 +26,20 @@ static UILabel *MYPipLabel(NSString *text, CGFloat size, NSTextAlignment alignme
     return label;
 }
 
-static UIView *MYPipRule(void) {
+static UIView *MYPipRule(UIColor *color) {
     UIView *rule = [[UIView alloc] initWithFrame:CGRectZero];
-    rule.backgroundColor = [MYPipGreen() colorWithAlphaComponent:0.72];
+    rule.backgroundColor = [color colorWithAlphaComponent:0.72];
     return rule;
 }
 
-static NSURL *MYPipBoyAnimationURL(void) {
-    Class bundleClass = NSClassFromString(@"MYLocalFaceBundle");
+static NSURL *MYPipBoyAnimationURL(BOOL redVariant) {
+    Class bundleClass = NSClassFromString(redVariant
+        ? @"MYRedLocalFaceBundle" : @"MYLocalFaceBundle");
     NSBundle *faceBundle = bundleClass ? [NSBundle bundleForClass:bundleClass] : nil;
     if (!faceBundle) {
         faceBundle = [NSBundle bundleWithIdentifier:
-            @"dev.develodom.WatchFaceLab.LocalFaceBundle"];
+            redVariant ? @"dev.develodom.WatchFaceLab.LocalFaceBundle.Red"
+                       : @"dev.develodom.WatchFaceLab.LocalFaceBundle"];
     }
     NSURL *url = [faceBundle URLForResource:@"pip-boy-reference"
                               withExtension:@"gif"
@@ -43,8 +52,37 @@ static NSURL *MYPipBoyAnimationURL(void) {
     return url;
 }
 
-static UIImage *MYAnimatedVaultBoySprite(void) {
-    NSURL *url = MYPipBoyAnimationURL();
+static CGImageRef MYCreateRedSprite(CGImageRef source) {
+    size_t width = CGImageGetWidth(source);
+    size_t height = CGImageGetHeight(source);
+    size_t bytesPerRow = width * 4;
+    uint8_t *pixels = calloc(height, bytesPerRow);
+    if (!pixels) return NULL;
+    CGColorSpaceRef colorSpace = CGColorSpaceCreateDeviceRGB();
+    CGContextRef context = CGBitmapContextCreate(
+        pixels, width, height, 8, bytesPerRow, colorSpace,
+        kCGImageAlphaPremultipliedLast | kCGBitmapByteOrder32Big);
+    CGColorSpaceRelease(colorSpace);
+    if (!context) {
+        free(pixels);
+        return NULL;
+    }
+    CGContextDrawImage(context, CGRectMake(0, 0, width, height), source);
+    for (size_t offset = 0; offset < height * bytesPerRow; offset += 4) {
+        uint8_t intensity = MAX(pixels[offset],
+                                MAX(pixels[offset + 1], pixels[offset + 2]));
+        pixels[offset] = intensity;
+        pixels[offset + 1] = (uint8_t)((NSUInteger)intensity * 31 / 255);
+        pixels[offset + 2] = (uint8_t)((NSUInteger)intensity * 20 / 255);
+    }
+    CGImageRef result = CGBitmapContextCreateImage(context);
+    CGContextRelease(context);
+    free(pixels);
+    return result;
+}
+
+static UIImage *MYAnimatedVaultBoySprite(BOOL redVariant) {
+    NSURL *url = MYPipBoyAnimationURL(redVariant);
     if (!url) {
         NSLog(@"Pip-Boy preview: bundled animation resource is unavailable");
         return nil;
@@ -71,9 +109,15 @@ static UIImage *MYAnimatedVaultBoySprite(void) {
         CGImageRef sprite = CGImageCreateWithImageInRect(fullFrame, cropRect);
         CGImageRelease(fullFrame);
         if (!sprite) continue;
-        [frames addObject:[UIImage imageWithCGImage:sprite
+        CGImageRef displaySprite = sprite;
+        if (redVariant) {
+            CGImageRef recolored = MYCreateRedSprite(sprite);
+            if (recolored) displaySprite = recolored;
+        }
+        [frames addObject:[UIImage imageWithCGImage:displaySprite
                                                scale:1.0
                                          orientation:UIImageOrientationUp]];
+        if (displaySprite != sprite) CGImageRelease(displaySprite);
         CGImageRelease(sprite);
 
         NSDictionary *properties = (__bridge_transfer NSDictionary *)
@@ -119,18 +163,20 @@ static UIImage *MYAnimatedVaultBoySprite(void) {
                 clientIdentifier:(NSString *)clientIdentifier {
     self = [super initWithFaceStyle:style forDevice:device clientIdentifier:clientIdentifier];
     if (self) {
+        BOOL redVariant = [self isKindOfClass:MYRedCustomFaceView.class];
+        UIColor *accentColor = redVariant ? MYPipRed() : MYPipGreen();
         self.backgroundColor = UIColor.blackColor;
         self.clipsToBounds = YES;
 
-        _headerLabel = MYPipLabel(@"STAT   INV   DATA   MAP   RADIO", 7.4, NSTextAlignmentCenter);
-        _statusLabel = MYPipLabel(@"STATUS     SPECIAL     PERKS", 7.0, NSTextAlignmentCenter);
-        _moveLabel = MYPipLabel(@"MOVE\n150 KCAL", 6.3, NSTextAlignmentCenter);
-        _stepsLabel = MYPipLabel(@"STEPS\n2003", 6.3, NSTextAlignmentCenter);
-        _exerciseLabel = MYPipLabel(@"EXERCISE\n3 MIN", 6.0, NSTextAlignmentCenter);
-        _standLabel = MYPipLabel(@"STAND\n5 H", 6.3, NSTextAlignmentCenter);
-        _dateLabel = MYPipLabel(@"", 7.2, NSTextAlignmentLeft);
-        _batteryLabel = MYPipLabel(@"BATT 60%", 6.2, NSTextAlignmentLeft);
-        _weatherLabel = MYPipLabel(@"69°F", 6.2, NSTextAlignmentRight);
+        _headerLabel = MYPipLabel(@"STAT   INV   DATA   MAP   RADIO", 7.4, NSTextAlignmentCenter, accentColor);
+        _statusLabel = MYPipLabel(@"STATUS     SPECIAL     PERKS", 7.0, NSTextAlignmentCenter, accentColor);
+        _moveLabel = MYPipLabel(@"MOVE\n150 KCAL", 6.3, NSTextAlignmentCenter, accentColor);
+        _stepsLabel = MYPipLabel(@"STEPS\n2003", 6.3, NSTextAlignmentCenter, accentColor);
+        _exerciseLabel = MYPipLabel(@"EXERCISE\n3 MIN", 6.0, NSTextAlignmentCenter, accentColor);
+        _standLabel = MYPipLabel(@"STAND\n5 H", 6.3, NSTextAlignmentCenter, accentColor);
+        _dateLabel = MYPipLabel(@"", 7.2, NSTextAlignmentLeft, accentColor);
+        _batteryLabel = MYPipLabel(@"BATT 60%", 6.2, NSTextAlignmentLeft, accentColor);
+        _weatherLabel = MYPipLabel(@"69°F", 6.2, NSTextAlignmentRight, accentColor);
 
         for (UILabel *label in @[_headerLabel, _statusLabel, _moveLabel, _stepsLabel,
                                  _exerciseLabel, _standLabel, _dateLabel,
@@ -138,20 +184,20 @@ static UIImage *MYAnimatedVaultBoySprite(void) {
             [self addSubview:label];
         }
 
-        _topRule = MYPipRule();
-        _centerMeter = MYPipRule();
-        _footerRule = MYPipRule();
-        _moveBar = MYPipRule();
-        _stepsBar = MYPipRule();
-        _exerciseBar = MYPipRule();
-        _standBar = MYPipRule();
-        _batteryBar = MYPipRule();
+        _topRule = MYPipRule(accentColor);
+        _centerMeter = MYPipRule(accentColor);
+        _footerRule = MYPipRule(accentColor);
+        _moveBar = MYPipRule(accentColor);
+        _stepsBar = MYPipRule(accentColor);
+        _exerciseBar = MYPipRule(accentColor);
+        _standBar = MYPipRule(accentColor);
+        _batteryBar = MYPipRule(accentColor);
         for (UIView *rule in @[_topRule, _centerMeter, _footerRule, _moveBar,
                                _stepsBar, _exerciseBar, _standBar, _batteryBar]) {
             [self addSubview:rule];
         }
 
-        UIImage *sprite = MYAnimatedVaultBoySprite();
+        UIImage *sprite = MYAnimatedVaultBoySprite(redVariant);
         if (sprite) {
             _vaultBoyView = [[UIImageView alloc] initWithImage:sprite];
             _vaultBoyView.contentMode = UIViewContentModeScaleAspectFit;
@@ -172,10 +218,11 @@ static UIImage *MYAnimatedVaultBoySprite(void) {
         }
         [_digitalTimeLabel setFont:[UIFont monospacedDigitSystemFontOfSize:19.0
                                                                  weight:UIFontWeightRegular]];
-        [_digitalTimeLabel setTextColor:MYPipGreen()];
+        [_digitalTimeLabel setTextColor:accentColor];
         [self setTimeView:_digitalTimeLabel];
         [[self rootContainerView] addSubview:_digitalTimeLabel];
-        NSLog(@"Custom Face PoC: assigned timeView=%@", NSStringFromClass(self.timeView.class));
+        NSLog(@"Custom Face PoC: assigned timeView=%@ variant=%@",
+              NSStringFromClass(self.timeView.class), redVariant ? @"red" : @"green");
     }
     return self;
 }
@@ -234,8 +281,16 @@ static UIImage *MYAnimatedVaultBoySprite(void) {
 }
 @end
 
+@implementation MYRedCustomFaceView
+@end
+
 @implementation MYCustomFace
 - (Class)faceViewClass { return MYCustomFaceView.class; }
+@end
+
+
+@implementation MYRedCustomFace
+- (Class)faceViewClass { return MYRedCustomFaceView.class; }
 @end
 
 MYCustomFaceView *MYCreateCustomFaceView(NSInteger style, MYCustomFace **faceOut) {

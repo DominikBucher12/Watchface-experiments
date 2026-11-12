@@ -44,6 +44,10 @@ black or show its inactive clock immediately afterward. Click the **Crown**
 button on the right side of the Simulator window once to wake it. The animated
 Pip-Boy face should then appear.
 
+Bootstrap installs two faces in the row: the original green Vault Boy and a red
+Vault Boy variant with a recolored animation and interface. Green is selected
+after bootstrap; swipe to the next custom face to select red.
+
 It does not modify the Apple runtime. Build products and the hybrid root live in
 `/tmp`; the only persistent object it creates is the dedicated Simulator device.
 

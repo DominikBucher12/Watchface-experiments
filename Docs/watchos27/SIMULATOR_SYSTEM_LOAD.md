@@ -89,6 +89,19 @@ index 1; watchOS runtime defaults may contain a different number of faces. The
 simulated display can be asleep immediately after ClockFace restarts. Click the
 Simulator window's **Crown** button once to wake it.
 
+### Installed face variants
+
+Quickstart installs two independent entries in the system face row:
+
+- `dev.develodom.WatchFaceLab.LocalFaceBundle` — original green Vault Boy;
+- `dev.develodom.WatchFaceLab.LocalFaceBundle.Red` — red Vault Boy, including
+  the animated sprite, labels, time, rules, and meters.
+
+The green face remains at its existing index and the red face is appended to the
+row. On a clean collection these are indices 0 and 1, but scripts always use the
+indices reported by the collection service. Clean rollback removes both custom
+entries.
+
 ## Changing the face title
 
 watchOS builds a localization key from the face style. Style 44 therefore asks

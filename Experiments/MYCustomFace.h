@@ -6,6 +6,12 @@
 @interface MYCustomFaceView : NTKFaceView
 @end
 
+@interface MYRedCustomFace : MYCustomFace
+@end
+
+@interface MYRedCustomFaceView : MYCustomFaceView
+@end
+
 // Explicit debugger entry point. Call on the main thread, with a researched style.
 // Retain the returned view and face in the host for the duration of the experiment.
 FOUNDATION_EXPORT MYCustomFaceView *MYCreateCustomFaceView(NSInteger style,

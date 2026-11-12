@@ -116,6 +116,21 @@ face_index="$(sed -nE 's/.*"index":([0-9]+).*/\1/p' \
 [[ -n "$face_index" ]] ||
     fail "the collection probe did not report the custom face index"
 
+say "Adding the red Vault Boy face"
+set +e
+red_install_output="$(bash "$driver" install-red "$simulator_udid" 2>&1)"
+red_install_status=$?
+set -e
+printf '%s\n' "$red_install_output"
+if [[ "$red_install_status" -ne 0 ]] &&
+    ! grep -Fq 'custom face already present' <<<"$red_install_output"; then
+    exit "$red_install_status"
+fi
+red_face_index="$(sed -nE 's/.*"index":([0-9]+).*/\1/p' \
+    <<<"$red_install_output" | tail -1)"
+[[ -n "$red_face_index" ]] ||
+    fail "the collection probe did not report the red face index"
+
 say "Switching the live ClockFace UI to custom face index $face_index"
 bash "$driver" show "$simulator_udid" "$face_index"
 
@@ -124,7 +139,8 @@ cleanup_needed=0
 trap - EXIT
 
 printf '\n%s\n' \
-    "READY: the Pip-Boy face is installed, selected, and animating." \
+    "READY: green and red Vault Boy faces are installed; green is selected and animating." \
+    "Red face index: $red_face_index" \
     "The simulated display may be asleep after ClockFace restarts." \
     "Click the Crown button in Simulator once to wake it; press it again only if an app is covering the face." \
     "Change the title later with:" \

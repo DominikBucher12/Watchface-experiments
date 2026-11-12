@@ -4,8 +4,10 @@
 #import <objc/runtime.h>
 #import <string.h>
 
-static NSString *const MYBundleIdentifier =
+static NSString *const MYGreenBundleIdentifier =
     @"dev.develodom.WatchFaceLab.LocalFaceBundle";
+static NSString *const MYRedBundleIdentifier =
+    @"dev.develodom.WatchFaceLab.LocalFaceBundle.Red";
 
 static id MYSendObject(id receiver, SEL selector) {
     return ((id (*)(id, SEL))objc_msgSend)(receiver, selector);
@@ -42,19 +44,19 @@ static NSString *MYFaceIdentifier(id face) {
     return [face respondsToSelector:selector] ? MYSendObject(face, selector) : nil;
 }
 
-static NSUInteger MYCustomFaceIndexInCollection(id collection) {
+static NSUInteger MYCustomFaceIndexInCollection(id collection, NSString *identifier) {
     SEL countSelector = sel_registerName("numberOfFaces");
     SEL faceSelector = sel_registerName("faceAtIndex:");
     NSUInteger count = MYSendUnsigned(collection, countSelector);
     for (NSUInteger index = 0; index < count; index++) {
         id face = MYSendObjectUnsigned(collection, faceSelector, index);
-        if ([MYFaceIdentifier(face) isEqualToString:MYBundleIdentifier]) return index;
+        if ([MYFaceIdentifier(face) isEqualToString:identifier]) return index;
     }
     return NSNotFound;
 }
 
-static id MYCustomFaceInCollection(id collection) {
-    NSUInteger index = MYCustomFaceIndexInCollection(collection);
+static id MYCustomFaceInCollection(id collection, NSString *identifier) {
+    NSUInteger index = MYCustomFaceIndexInCollection(collection, identifier);
     return index == NSNotFound ? nil : MYSendObjectUnsigned(
         collection, sel_registerName("faceAtIndex:"), index);
 }
@@ -76,9 +78,16 @@ int main(int argc, const char *argv[]) {
         NSString *marker = environment[@"WATCHFACELAB_SYSTEM_DISCOVERY_PROBE"];
         NSString *bundlePath = [root stringByAppendingPathComponent:
             @"System/Library/NanoTimeKit/FaceBundles/MYLocalFaceBundle.bundle"];
-        if ((![@"install" isEqualToString:mode] && ![@"remove" isEqualToString:mode]) ||
+        NSString *redBundlePath = [root stringByAppendingPathComponent:
+            @"System/Library/NanoTimeKit/FaceBundles/MYRedLocalFaceBundle.bundle"];
+        BOOL needsRedBundle = [@"install-red" isEqualToString:mode];
+        if ((![@"install" isEqualToString:mode] &&
+             ![@"install-red" isEqualToString:mode] &&
+             ![@"remove" isEqualToString:mode]) ||
             ![marker isEqualToString:@"1"] ||
-            ![[NSFileManager defaultManager] fileExistsAtPath:bundlePath]) {
+            ![[NSFileManager defaultManager] fileExistsAtPath:bundlePath] ||
+            (needsRedBundle &&
+             ![[NSFileManager defaultManager] fileExistsAtPath:redBundlePath])) {
             MYPrint(@{@"error": @"usage/overlay guard rejected", @"root": root ?: @"nil"});
             return 64;
         }
@@ -116,17 +125,25 @@ int main(int argc, const char *argv[]) {
         }
 
         NSUInteger beforeCount = MYSendUnsigned(collection, countSelector);
-        id existing = MYCustomFaceInCollection(collection);
         if ([mode isEqualToString:@"remove"]) {
-            if (!existing) {
+            id greenFace = MYCustomFaceInCollection(collection, MYGreenBundleIdentifier);
+            id redFace = MYCustomFaceInCollection(collection, MYRedBundleIdentifier);
+            if (!greenFace && !redFace) {
                 MYPrint(@{@"mode": mode, @"removed": @NO,
-                          @"reason": @"custom face absent", @"count": @(beforeCount)});
+                          @"reason": @"custom faces absent", @"count": @(beforeCount)});
                 return 0;
             }
-            ((void (*)(id, SEL, id, id))objc_msgSend)(
-                collection, removeSelector, existing, nil);
+            if (redFace) {
+                ((void (*)(id, SEL, id, id))objc_msgSend)(
+                    collection, removeSelector, redFace, nil);
+            }
+            if (greenFace) {
+                ((void (*)(id, SEL, id, id))objc_msgSend)(
+                    collection, removeSelector, greenFace, nil);
+            }
             BOOL removed = MYWaitUntil(^BOOL {
-                return !MYCustomFaceInCollection(collection);
+                return !MYCustomFaceInCollection(collection, MYGreenBundleIdentifier) &&
+                    !MYCustomFaceInCollection(collection, MYRedBundleIdentifier);
             }, 10.0);
             MYPrint(@{@"mode": mode, @"removed": @(removed),
                       @"countBefore": @(beforeCount),
@@ -134,20 +151,27 @@ int main(int argc, const char *argv[]) {
             return removed ? 0 : 68;
         }
 
+        NSString *targetIdentifier = [mode isEqualToString:@"install-red"]
+            ? MYRedBundleIdentifier : MYGreenBundleIdentifier;
+        id existing = MYCustomFaceInCollection(collection, targetIdentifier);
         if (existing) {
             MYPrint(@{@"error": @"custom face already present",
+                      @"identifier": targetIdentifier,
                       @"count": @(beforeCount),
-                      @"index": @(MYCustomFaceIndexInCollection(collection))});
+                      @"index": @(MYCustomFaceIndexInCollection(collection,
+                                                                  targetIdentifier))});
             return 69;
         }
         CLKDevice *device = [CLKDevice currentDevice];
         NTKFaceBundleManager *manager = [NTKFaceBundleManager sharedManager];
-        NTKFaceBundle *bundle = [manager faceBundleForBundleIdentifier:MYBundleIdentifier
+        NTKFaceBundle *bundle = [manager faceBundleForBundleIdentifier:targetIdentifier
                                                               onDevice:device
                                                           forMigration:NO];
         NTKFace *face = [bundle defaultFaceForDevice:device];
-        if (!bundle || !face || ![MYFaceIdentifier(face) isEqualToString:MYBundleIdentifier]) {
-            MYPrint(@{@"error": @"custom bundle/face unavailable from shared manager"});
+        if (!bundle || !face ||
+            ![MYFaceIdentifier(face) isEqualToString:targetIdentifier]) {
+            MYPrint(@{@"error": @"custom bundle/face unavailable from shared manager",
+                      @"identifier": targetIdentifier});
             return 70;
         }
 
@@ -163,16 +187,17 @@ int main(int argc, const char *argv[]) {
         [newUUIDs minusSet:[NSSet setWithArray:beforeOrder ?: @[]]];
         NSUUID *newUUID = newUUIDs.count == 1 ? newUUIDs.anyObject : nil;
         if (!added || !newUUID) {
-            id partialFace = MYCustomFaceInCollection(collection);
+            id partialFace = MYCustomFaceInCollection(collection, targetIdentifier);
             if (partialFace) {
                 ((void (*)(id, SEL, id, id))objc_msgSend)(
                     collection, removeSelector, partialFace, nil);
             }
             BOOL rolledBack = MYWaitUntil(^BOOL {
-                return !MYCustomFaceInCollection(collection) &&
+                return !MYCustomFaceInCollection(collection, targetIdentifier) &&
                     MYSendUnsigned(collection, countSelector) == beforeCount;
             }, 10.0);
             MYPrint(@{@"error": @"add did not produce exactly one UUID",
+                      @"identifier": targetIdentifier,
                       @"countBefore": @(beforeCount),
                       @"countAfter": @(MYSendUnsigned(collection, countSelector)),
                       @"newUUIDCount": @(newUUIDs.count),
@@ -180,13 +205,19 @@ int main(int argc, const char *argv[]) {
             return 71;
         }
 
-        ((void (*)(id, SEL, id, BOOL))objc_msgSend)(
-            collection, selectSelector, newUUID, YES);
-        BOOL selected = MYWaitUntil(^BOOL {
-            return [MYSendObject(collection, selectedSelector) isEqual:newUUID];
+        BOOL shouldSelect = [mode isEqualToString:@"install"];
+        NSUUID *expectedSelectedUUID = shouldSelect ? newUUID : beforeSelectedUUID;
+        if (expectedSelectedUUID) {
+            ((void (*)(id, SEL, id, BOOL))objc_msgSend)(
+                collection, selectSelector, expectedSelectedUUID, YES);
+        }
+        BOOL selectionMatches = MYWaitUntil(^BOOL {
+            NSUUID *current = MYSendObject(collection, selectedSelector);
+            return expectedSelectedUUID ? [current isEqual:expectedSelectedUUID]
+                                        : current == nil;
         }, 10.0);
-        if (!selected) {
-            id addedFace = MYCustomFaceInCollection(collection);
+        if (!selectionMatches) {
+            id addedFace = MYCustomFaceInCollection(collection, targetIdentifier);
             if (addedFace) {
                 ((void (*)(id, SEL, id, id))objc_msgSend)(
                     collection, removeSelector, addedFace, nil);
@@ -196,7 +227,8 @@ int main(int argc, const char *argv[]) {
                     collection, selectSelector, beforeSelectedUUID, YES);
             }
             BOOL rolledBack = MYWaitUntil(^BOOL {
-                BOOL faceRestored = !MYCustomFaceInCollection(collection) &&
+                BOOL faceRestored = !MYCustomFaceInCollection(collection,
+                                                               targetIdentifier) &&
                     MYSendUnsigned(collection, countSelector) == beforeCount;
                 BOOL selectionRestored = !beforeSelectedUUID ||
                     [MYSendObject(collection, selectedSelector)
@@ -204,17 +236,21 @@ int main(int argc, const char *argv[]) {
                 return faceRestored && selectionRestored;
             }, 10.0);
             MYPrint(@{@"error": @"selection verification failed",
+                      @"identifier": targetIdentifier,
                       @"uuid": newUUID.UUIDString,
                       @"rolledBack": @(rolledBack),
                       @"countBefore": @(beforeCount),
                       @"countAfter": @(MYSendUnsigned(collection, countSelector))});
             return 72;
         }
-        MYPrint(@{@"mode": mode, @"added": @YES, @"selected": @(selected),
+        MYPrint(@{@"mode": mode, @"added": @YES,
+                  @"selected": @(shouldSelect),
+                  @"selectionPreserved": @(!shouldSelect),
+                  @"identifier": targetIdentifier,
                   @"uuid": newUUID.UUIDString,
                   @"index": @(beforeCount),
                   @"countBefore": @(beforeCount),
                   @"countAfter": @(MYSendUnsigned(collection, countSelector))});
-        return selected ? 0 : 72;
+        return 0;
     }
 }

@@ -12,6 +12,7 @@ usage() {
         "usage: $0 prepare <research-simulator-udid>" \
         "       $0 activate <research-simulator-udid> <overlay-root>" \
         "       $0 install <research-simulator-udid>" \
+        "       $0 install-red <research-simulator-udid>" \
         "       $0 show <research-simulator-udid> <face-index>" \
         "       $0 remove <research-simulator-udid>" \
         "       $0 status <research-simulator-udid>" \
@@ -97,15 +98,16 @@ case "$action" in
         # the original bundles visible without modifying the runtime volume.
         cp -cR "$runtime/System/Library/NanoTimeKit/FaceBundles/." "$overlay_faces/"
         cp -R "$build_root/FaceBundles/MYLocalFaceBundle.bundle" "$overlay_faces/"
+        cp -R "$build_root/FaceBundles/MYRedLocalFaceBundle.bundle" "$overlay_faces/"
         cp "$build_root/MYCustomFaceExperiment.dylib" \
             "$overlay_root/System/Library/NanoTimeKit/"
         system_count="$(find "$runtime/System/Library/NanoTimeKit/FaceBundles" \
             -maxdepth 1 -name '*.bundle' | wc -l | tr -d ' ')"
         overlay_count="$(find "$overlay_faces" -maxdepth 1 -name '*.bundle' |
             wc -l | tr -d ' ')"
-        if [[ "$overlay_count" -ne $((system_count + 1)) ]]; then
+        if [[ "$overlay_count" -ne $((system_count + 2)) ]]; then
             printf 'ERROR: overlay count %s, expected %s\n' \
-                "$overlay_count" "$((system_count + 1))" >&2
+                "$overlay_count" "$((system_count + 2))" >&2
             exit 68
         fi
         printf 'OVERLAY_ROOT=%s\n' "$overlay_root"
@@ -161,11 +163,15 @@ case "$action" in
             nanotimekitd_pid="$(job_pid 'com.apple.nanotimekitd')"
             activation_logs="$(xcrun simctl spawn "$simulator_udid" log show \
                 --last 1m --info --debug --style compact \
-                --predicate 'eventMessage CONTAINS "WATCHFACELAB_ROOT_BOOTSTRAP" OR eventMessage CONTAINS "WATCHFACELAB_SYSTEM_BUNDLE_LOADED"')"
+                --predicate 'eventMessage CONTAINS "WATCHFACELAB_ROOT_BOOTSTRAP" OR eventMessage CONTAINS "WATCHFACELAB_SYSTEM_BUNDLE_LOADED" OR eventMessage CONTAINS "WATCHFACELAB_RED_BUNDLE_LOADED"')"
             if [[ -n "$clockface_pid" && -n "$nanotimekitd_pid" ]] &&
                 grep -Fq "WATCHFACELAB_SYSTEM_BUNDLE_LOADED pid=$clockface_pid host=com.apple.clockface" \
                     <<<"$activation_logs" &&
                 grep -Fq "WATCHFACELAB_SYSTEM_BUNDLE_LOADED pid=$nanotimekitd_pid host=com.apple.nanotimekitd" \
+                    <<<"$activation_logs" &&
+                grep -Fq "WATCHFACELAB_RED_BUNDLE_LOADED pid=$clockface_pid host=com.apple.clockface" \
+                    <<<"$activation_logs" &&
+                grep -Fq "WATCHFACELAB_RED_BUNDLE_LOADED pid=$nanotimekitd_pid host=com.apple.nanotimekitd" \
                     <<<"$activation_logs"; then
                 break
             fi
@@ -180,6 +186,10 @@ case "$action" in
             ! grep -Fq "WATCHFACELAB_SYSTEM_BUNDLE_LOADED pid=$clockface_pid host=com.apple.clockface" \
                 <<<"$activation_logs" ||
             ! grep -Fq "WATCHFACELAB_SYSTEM_BUNDLE_LOADED pid=$nanotimekitd_pid host=com.apple.nanotimekitd" \
+                <<<"$activation_logs" ||
+            ! grep -Fq "WATCHFACELAB_RED_BUNDLE_LOADED pid=$clockface_pid host=com.apple.clockface" \
+                <<<"$activation_logs" ||
+            ! grep -Fq "WATCHFACELAB_RED_BUNDLE_LOADED pid=$nanotimekitd_pid host=com.apple.nanotimekitd" \
                 <<<"$activation_logs"; then
             printf 'ERROR: injected jobs did not remain stable or load the custom bundle\n' >&2
             printf 'ClockFace: %s -> %s; nanotimekitd: %s -> %s\n' \
@@ -218,7 +228,7 @@ case "$action" in
             tail -40 || true
         ;;
 
-    install|remove)
+    install|install-red|remove)
         mutation_probe="$build_root/CollectionMutationProbe"
         if [[ ! -x "$mutation_probe" ]]; then
             printf 'ERROR: missing mutation probe; run prepare first\n' >&2
