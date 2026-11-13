@@ -67,6 +67,7 @@ enum CustomFaceLoader {
         guard !didRunSystemAction else { return true }
         didRunSystemAction = true
         writeSystemActionRecord(action: action, stage: "swift-start", complete: false)
+
         guard let handle = loadExperimentFramework() else {
             writeSystemActionRecord(
                 action: action,
