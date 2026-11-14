@@ -51,6 +51,7 @@ Representative selectors observed:
 - `_NTKQueryFaceSupportServerForNewFaces` uses XPC service name `com.apple.nanotimekit.facesupportserver`; associated interface exposes `knownKeyDescriptors:` and `displayUserNotificationForKeyDescriptor:completion:`.
 - Internal feature flags referenced include `NanoTimeKitExtras/argon_manual_mode` and `NanoTimeKitExtras/load_unencrypted_argon_bundles`, with internal-build gating. These are **not** documented external APIs.
 - `_NTKAskFaceSupportServerToAddKeyDescriptor` is called from `-[NTKFaceBundleManager loadKeyDescriptor:]` (static disassembly). The latter resets caches on success; no successful third-party registration was tested.
+- On the matching 24R365 NanoTimeKit image, `-[NTKDArgonService listener:shouldAcceptNewConnection:]` installs `_NTKFaceSupportServerInterface`, exports the shared service wrapper, resumes the connection, and returns true without a visible audit-token or entitlement check. This only describes the server listener after a connection reaches it.
 - `_generateLookupsIfNecessary` builds face lookup caches from loader-discovered classes; `argonUpdated:` resets caches and posts an update notification (static disassembly).
 - Extracted path seen in actual logs: `/var/mobile/Library/NanoTimeKit/FaceSupport/ExtractedBundles/24R365`; the build-specific suffix was observed on device.
 
@@ -74,6 +75,13 @@ The `ARGON_DESCRIPTOR` probes attempted directory enumeration. Reported:
 ```
 
 `ENOENT` = missing path. `EPERM` = WatchFaceLab denied permission (likely sandbox). It **does not establish whether the restricted directory exists**, and is not evidence that the server specifically rejected our custom bundle. A separate log `xpc connection invalidated. This is unrecoverable.` did not identify the affected XPC endpoint.
+
+A dedicated physical read-only boundary probe then checked
+`mach-lookup` for `com.apple.nanotimekit.facesupportserver` before creating an
+XPC connection. On watchOS 27.0.1 (24R365), `sandbox_check` returned 1
+(`allowed=0`, `denied=1`) and the probe reported `request-sent=0`. Therefore the
+apparently permissive listener is not reachable from this normally signed app;
+no `knownKeyDescriptors:` request was sent and no state was changed.
 
 ## Sysdiagnose
 

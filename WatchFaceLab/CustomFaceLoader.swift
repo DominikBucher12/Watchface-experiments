@@ -40,20 +40,20 @@ enum CustomFaceLoader {
                 options: .atomic
             )
         } catch {
-            print("SYSTEM_FACE_RESULT_WRITE_ERROR \(error)")
+//            print("SYSTEM_FACE_RESULT_WRITE_ERROR \(error)")
         }
     }
 
     private static func loadExperimentFramework() -> UnsafeMutableRawPointer? {
         guard let frameworksURL = Bundle.main.privateFrameworksURL else {
-            print("WatchFaceLab: Frameworks directory unavailable")
+//            print("WatchFaceLab: Frameworks directory unavailable")
             return nil
         }
         let frameworkURL = frameworksURL
             .appendingPathComponent("MYCustomFaceExperiment.framework")
             .appendingPathComponent("MYCustomFaceExperiment")
         guard let handle = dlopen(frameworkURL.path, RTLD_NOW) else {
-            print("WatchFaceLab: dlopen failed: \(String(cString: dlerror()))")
+//            print("WatchFaceLab: dlopen failed: \(String(cString: dlerror()))")
             return nil
         }
         return handle
@@ -88,7 +88,7 @@ enum CustomFaceLoader {
         if let symbolName = noArgumentSymbols[action],
            let symbol = dlsym(handle, symbolName) {
             let function = unsafeBitCast(symbol, to: (@convention(c) () -> Int8).self)
-            print("SYSTEM_FACE_ACTION action=\(action) result=\(function())")
+//            print("SYSTEM_FACE_ACTION action=\(action) result=\(function())")
             return true
         }
         if action == "install",
@@ -99,10 +99,10 @@ enum CustomFaceLoader {
             )
             // The face bundle is copied at the app root, so pass that root itself.
             let appRoot = Bundle.main.bundleURL.path as NSString
-            print("SYSTEM_FACE_ACTION action=install result=\(function(appRoot))")
+//            print("SYSTEM_FACE_ACTION action=install result=\(function(appRoot))")
             return true
         }
-        print("SYSTEM_FACE_ACTION action=\(action) result=missing-export-or-unknown-action")
+//        print("SYSTEM_FACE_ACTION action=\(action) result=missing-export-or-unknown-action")
         writeSystemActionRecord(
             action: action,
             stage: "symbol-lookup",
@@ -118,7 +118,7 @@ enum CustomFaceLoader {
         guard let handle = loadExperimentFramework() else { return }
 
         guard let symbol = dlsym(handle, "MYDiscoverLocalFaceBundle") else {
-            print("Argon PoC: discovery symbol unavailable")
+//            print("Argon PoC: discovery symbol unavailable")
             return
         }
 
@@ -135,7 +135,7 @@ enum CustomFaceLoader {
             .appendingPathComponent("MYLocalFaceBundle.bundle", isDirectory: true)
 
         let result = discover(directory.deletingLastPathComponent().path as NSString)
-        print("Nevim co dela result ale tu mas: \(result)")
+//        print("Nevim co dela result ale tu mas: \(result)")
     }
     
     static func present() {
@@ -144,15 +144,15 @@ enum CustomFaceLoader {
 
         guard let handle = loadExperimentFramework() else { return }
 
-        if let v3Symbol = dlsym(handle, "MYInspectArgonDescriptorsV3") {
-            let v3Probe = unsafeBitCast(v3Symbol, to: (@convention(c) () -> Void).self)
-            v3Probe()
-        } else {
-            print("ARGON_V3 FAIL export missing")
-        }
+//        if let v3Symbol = dlsym(handle, "MYInspectArgonDescriptorsV3") {
+//            let v3Probe = unsafeBitCast(v3Symbol, to: (@convention(c) () -> Void).self)
+//            v3Probe()
+//        } else {
+//            print("ARGON_V3 FAIL export missing")
+//        }
 
         guard let symbol = dlsym(handle, "MYPresentCustomFaceExperiment") else {
-            print("CustomFace: entrypoint not found")
+//            print("CustomFace: entrypoint not found")
             return
         }
 

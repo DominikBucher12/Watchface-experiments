@@ -13,6 +13,17 @@
 		010000000000000000000033 /* HelloWorld.c in Sources */ = {isa = PBXBuildFile; fileRef = 010000000000000000000027 /* HelloWorld.c */; };
 		010000000000000000000034 /* CVE112474Probe.c in Sources */ = {isa = PBXBuildFile; fileRef = 01000000000000000000002A /* CVE112474Probe.c */; };
 		010000000000000000000035 /* TTYPtmxProbe.c in Sources */ = {isa = PBXBuildFile; fileRef = 01000000000000000000002C /* TTYPtmxProbe.c */; };
+		010000000000000000000036 /* unix-scm-rights-probe.c in Sources */ = {isa = PBXBuildFile; fileRef = 01000000000000000000002E /* unix-scm-rights-probe.c */; };
+		01000000000000000000003A /* BPFOpenProbe.c in Sources */ = {isa = PBXBuildFile; fileRef = 010000000000000000000038 /* BPFOpenProbe.c */; };
+		010000000000000000000055 /* IOMFBOpenProbe.c in Sources */ = {isa = PBXBuildFile; fileRef = 010000000000000000000053 /* IOMFBOpenProbe.c */; };
+		010000000000000000000058 /* TCPInfoProbe.c in Sources */ = {isa = PBXBuildFile; fileRef = 010000000000000000000056 /* TCPInfoProbe.c */; };
+		01000000000000000000005B /* WorkqueueInfoProbe.c in Sources */ = {isa = PBXBuildFile; fileRef = 010000000000000000000059 /* WorkqueueInfoProbe.c */; };
+		01000000000000000000003C /* CVE112665Probe.cpp in Sources */ = {isa = PBXBuildFile; fileRef = 01000000000000000000003B /* CVE112665Probe.cpp */; };
+		01000000000000000000003E /* COWMemoryProbe.c in Sources */ = {isa = PBXBuildFile; fileRef = 01000000000000000000003D /* COWMemoryProbe.c */; };
+		010000000000000000000046 /* CVE113910Probe.c in Sources */ = {isa = PBXBuildFile; fileRef = 010000000000000000000045 /* CVE113910Probe.c */; };
+		010000000000000000000049 /* CVE112466Probe.c in Sources */ = {isa = PBXBuildFile; fileRef = 010000000000000000000048 /* CVE112466Probe.c */; };
+		01000000000000000000004C /* ContainerTokenProbe.m in Sources */ = {isa = PBXBuildFile; fileRef = 01000000000000000000004B /* ContainerTokenProbe.m */; };
+		010000000000000000000050 /* FaceSupportReadOnlyProbe.m in Sources */ = {isa = PBXBuildFile; fileRef = 01000000000000000000004F /* FaceSupportReadOnlyProbe.m */; };
 		4E24FD483089933D00446D36 /* MYCustomFaceExperiment.framework in Embed Frameworks */ = {isa = PBXBuildFile; fileRef = 4E24FD473089933D00446D36 /* MYCustomFaceExperiment.framework */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
 		4E24FD4A308998BC00446D36 /* CustomFaceLoader.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4E24FD49308998B600446D36 /* CustomFaceLoader.swift */; };
 		4E7CD08F308AA3C400DFEB93 /* MYLocalFaceBundle.bundle in CopyFiles */ = {isa = PBXBuildFile; fileRef = 4E7CD08E308AA3C400DFEB93 /* MYLocalFaceBundle.bundle */; settings = {ATTRIBUTES = (CodeSignOnCopy, RemoveHeadersOnCopy, ); }; };
@@ -58,6 +69,29 @@
 		01000000000000000000002B /* CVE112474Probe.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CVE112474Probe.h; sourceTree = "<group>"; };
 		01000000000000000000002C /* TTYPtmxProbe.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = TTYPtmxProbe.c; sourceTree = "<group>"; };
 		01000000000000000000002D /* TTYPtmxProbe.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = TTYPtmxProbe.h; sourceTree = "<group>"; };
+		01000000000000000000002E /* unix-scm-rights-probe.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; name = "unix-scm-rights-probe.c"; path = "../Experiments/unix-scm-rights-probe.c"; sourceTree = "<group>"; };
+		01000000000000000000002F /* unix-scm-rights-probe.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "unix-scm-rights-probe.h"; path = "../Experiments/unix-scm-rights-probe.h"; sourceTree = "<group>"; };
+		010000000000000000000038 /* BPFOpenProbe.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = BPFOpenProbe.c; sourceTree = "<group>"; };
+		010000000000000000000039 /* BPFOpenProbe.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = BPFOpenProbe.h; sourceTree = "<group>"; };
+		010000000000000000000053 /* IOMFBOpenProbe.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = IOMFBOpenProbe.c; sourceTree = "<group>"; };
+		010000000000000000000054 /* IOMFBOpenProbe.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = IOMFBOpenProbe.h; sourceTree = "<group>"; };
+		010000000000000000000056 /* TCPInfoProbe.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = TCPInfoProbe.c; sourceTree = "<group>"; };
+		010000000000000000000057 /* TCPInfoProbe.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = TCPInfoProbe.h; sourceTree = "<group>"; };
+		010000000000000000000059 /* WorkqueueInfoProbe.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = WorkqueueInfoProbe.c; sourceTree = "<group>"; };
+		01000000000000000000005A /* WorkqueueInfoProbe.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = WorkqueueInfoProbe.h; sourceTree = "<group>"; };
+		01000000000000000000003B /* CVE112665Probe.cpp */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.cpp.cpp; path = CVE112665Probe.cpp; sourceTree = SOURCE_ROOT; };
+		01000000000000000000003D /* COWMemoryProbe.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = COWMemoryProbe.c; sourceTree = "<group>"; };
+		01000000000000000000003F /* COWMemoryProbe.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = COWMemoryProbe.h; sourceTree = "<group>"; };
+		010000000000000000000044 /* CVE112665Probe.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CVE112665Probe.h; sourceTree = "<group>"; };
+		010000000000000000000045 /* CVE113910Probe.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = CVE113910Probe.c; sourceTree = "<group>"; };
+		010000000000000000000047 /* CVE113910Probe.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CVE113910Probe.h; sourceTree = "<group>"; };
+		010000000000000000000048 /* CVE112466Probe.c */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.c; path = CVE112466Probe.c; sourceTree = "<group>"; };
+		01000000000000000000004A /* CVE112466Probe.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = CVE112466Probe.h; sourceTree = "<group>"; };
+		01000000000000000000004B /* ContainerTokenProbe.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = ContainerTokenProbe.m; sourceTree = "<group>"; };
+		01000000000000000000004D /* ContainerTokenProbe.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ContainerTokenProbe.h; sourceTree = "<group>"; };
+		01000000000000000000004E /* WatchFaceLab.entitlements */ = {isa = PBXFileReference; lastKnownFileType = text.plist.entitlements; path = WatchFaceLab.entitlements; sourceTree = "<group>"; };
+		01000000000000000000004F /* FaceSupportReadOnlyProbe.m */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.objc; path = FaceSupportReadOnlyProbe.m; sourceTree = "<group>"; };
+		010000000000000000000051 /* FaceSupportReadOnlyProbe.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = FaceSupportReadOnlyProbe.h; sourceTree = "<group>"; };
 		4E24FD473089933D00446D36 /* MYCustomFaceExperiment.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = MYCustomFaceExperiment.framework; path = Experiments/Build/Device/MYCustomFaceExperiment.framework; sourceTree = "<group>"; };
 		4E24FD49308998B600446D36 /* CustomFaceLoader.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CustomFaceLoader.swift; sourceTree = "<group>"; };
 		4E7CD08E308AA3C400DFEB93 /* MYLocalFaceBundle.bundle */ = {isa = PBXFileReference; lastKnownFileType = "wrapper.plug-in"; name = MYLocalFaceBundle.bundle; path = Experiments/Build/Device/FaceBundles/MYLocalFaceBundle.bundle; sourceTree = "<group>"; };
@@ -83,6 +117,7 @@
 				010000000000000000000007 /* Experiments */,
 				010000000000000000000008,
 				010000000000000000000004 /* Products */,
+				C507B61F30A79C8600431876 /* Recovered References */,
 			);
 			sourceTree = "<group>";
 		};
@@ -107,6 +142,28 @@
 				01000000000000000000002B /* CVE112474Probe.h */,
 				01000000000000000000002C /* TTYPtmxProbe.c */,
 				01000000000000000000002D /* TTYPtmxProbe.h */,
+				01000000000000000000002E /* unix-scm-rights-probe.c */,
+				01000000000000000000002F /* unix-scm-rights-probe.h */,
+				010000000000000000000038 /* BPFOpenProbe.c */,
+				010000000000000000000039 /* BPFOpenProbe.h */,
+				010000000000000000000053 /* IOMFBOpenProbe.c */,
+				010000000000000000000054 /* IOMFBOpenProbe.h */,
+				010000000000000000000056 /* TCPInfoProbe.c */,
+				010000000000000000000057 /* TCPInfoProbe.h */,
+				010000000000000000000059 /* WorkqueueInfoProbe.c */,
+				01000000000000000000005A /* WorkqueueInfoProbe.h */,
+				01000000000000000000003D /* COWMemoryProbe.c */,
+				01000000000000000000003F /* COWMemoryProbe.h */,
+				010000000000000000000044 /* CVE112665Probe.h */,
+				010000000000000000000045 /* CVE113910Probe.c */,
+				010000000000000000000047 /* CVE113910Probe.h */,
+				010000000000000000000048 /* CVE112466Probe.c */,
+				01000000000000000000004A /* CVE112466Probe.h */,
+				01000000000000000000004B /* ContainerTokenProbe.m */,
+				01000000000000000000004D /* ContainerTokenProbe.h */,
+				01000000000000000000004E /* WatchFaceLab.entitlements */,
+				01000000000000000000004F /* FaceSupportReadOnlyProbe.m */,
+				010000000000000000000051 /* FaceSupportReadOnlyProbe.h */,
 				010000000000000000000026 /* Resources/pip-boy-reference.gif */,
 			);
 			path = WatchFaceLab;
@@ -127,6 +184,14 @@
 				010000000000000000000024 /* README.md */,
 				010000000000000000000025 /* RESEARCH.md */,
 			);
+			sourceTree = "<group>";
+		};
+		C507B61F30A79C8600431876 /* Recovered References */ = {
+			isa = PBXGroup;
+			children = (
+				01000000000000000000003B /* CVE112665Probe.cpp */,
+			);
+			name = "Recovered References";
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
@@ -163,6 +228,11 @@
 				TargetAttributes = {
 					010000000000000000000002 = {
 						CreatedOnToolsVersion = 26.5;
+						SystemCapabilities = {
+							com.apple.ApplicationGroups.iOS = {
+								enabled = 1;
+							};
+						};
 					};
 				};
 			};
@@ -230,6 +300,17 @@
 				010000000000000000000033 /* HelloWorld.c in Sources */,
 				010000000000000000000034 /* CVE112474Probe.c in Sources */,
 				010000000000000000000035 /* TTYPtmxProbe.c in Sources */,
+				010000000000000000000036 /* unix-scm-rights-probe.c in Sources */,
+				01000000000000000000003A /* BPFOpenProbe.c in Sources */,
+				010000000000000000000055 /* IOMFBOpenProbe.c in Sources */,
+				010000000000000000000058 /* TCPInfoProbe.c in Sources */,
+				01000000000000000000005B /* WorkqueueInfoProbe.c in Sources */,
+				01000000000000000000003C /* CVE112665Probe.cpp in Sources */,
+				01000000000000000000003E /* COWMemoryProbe.c in Sources */,
+				010000000000000000000046 /* CVE113910Probe.c in Sources */,
+				010000000000000000000049 /* CVE112466Probe.c in Sources */,
+				01000000000000000000004C /* ContainerTokenProbe.m in Sources */,
+				010000000000000000000050 /* FaceSupportReadOnlyProbe.m in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -260,6 +341,7 @@
 				ARCHS = arm64;
 				ASSETCATALOG_COMPILER_APPICON_NAME = "";
 				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_ENTITLEMENTS = WatchFaceLab/WatchFaceLab.entitlements;
 				COPY_HEADERS_UNIFDEF_FLAGS = "-Wno-unknown-pragmas -Wno-unguarded-availability";
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = X2MB65427X;
@@ -269,6 +351,7 @@
 					"$(PROJECT_DIR)/Experiments/Build/Device",
 				);
 				GENERATE_INFOPLIST_FILE = YES;
+				HEADER_SEARCH_PATHS = "$(SRCROOT)/Headers";
 				INFOPLIST_KEY_CFBundleDisplayName = WatchFaceLab;
 				INFOPLIST_KEY_WKApplication = YES;
 				INFOPLIST_KEY_WKWatchOnly = YES;
@@ -276,6 +359,8 @@
 				OTHER_LDFLAGS = (
 					"-Wno-unguarded-availability",
 					"-Wno-unknown-pragmas",
+					"-lSystem",
+					"-L$(SDKROOT)/usr/lib",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = dev.develodom.WatchFaceLab;
 				PRODUCT_NAME = "$(TARGET_NAME)";
@@ -295,6 +380,7 @@
 				ARCHS = arm64;
 				ASSETCATALOG_COMPILER_APPICON_NAME = "";
 				CODE_SIGN_STYLE = Automatic;
+				CODE_SIGN_ENTITLEMENTS = WatchFaceLab/WatchFaceLab.entitlements;
 				COPY_HEADERS_UNIFDEF_FLAGS = "-Wno-unknown-pragmas -Wno-unguarded-availability";
 				CURRENT_PROJECT_VERSION = 1;
 				DEVELOPMENT_TEAM = X2MB65427X;
@@ -304,6 +390,7 @@
 					"$(PROJECT_DIR)/Experiments/Build/Device",
 				);
 				GENERATE_INFOPLIST_FILE = YES;
+				HEADER_SEARCH_PATHS = "$(SRCROOT)/Headers";
 				INFOPLIST_KEY_CFBundleDisplayName = WatchFaceLab;
 				INFOPLIST_KEY_WKApplication = YES;
 				INFOPLIST_KEY_WKWatchOnly = YES;
@@ -311,6 +398,8 @@
 				OTHER_LDFLAGS = (
 					"-Wno-unguarded-availability",
 					"-Wno-unknown-pragmas",
+					"-lSystem",
+					"-L$(SDKROOT)/usr/lib",
 				);
 				PRODUCT_BUNDLE_IDENTIFIER = dev.develodom.WatchFaceLab;
 				PRODUCT_NAME = "$(TARGET_NAME)";

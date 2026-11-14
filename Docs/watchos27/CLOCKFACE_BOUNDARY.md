@@ -39,6 +39,7 @@ This is an **accessibility bundle**, **not** `/Applications/ClockFace.app/ClockF
 | Return app bundle from `NTKFaceBundleManager` via temporary manager subclass | **Verified** | Not tested |
 | Read `/var/mobile/.../ExtractedBundles/24R365` | **Denied (`EPERM`)** | Permissions not examined |
 | Look up `com.apple.nanotimekit.collectionserver` | **Denied by sandbox** | System client owns the service path |
+| Look up `com.apple.nanotimekit.facesupportserver` | **Denied by sandbox; no request sent** | Matching server listener appears permissive only after transport admission |
 | Persist custom native face as the watch's actual selected face | **Not achieved** | Not achieved |
 
 The app-process manager experiment uses `object_setClass` only for its own `NTKFaceBundleManager` instance. It does **not** alter the separately running `ClockFace` process or system filesystem. `OWNED27 RESTORED class=1 absent=1` confirmed the custom identity was absent after restoring the manager's original class.
@@ -48,7 +49,10 @@ The app-process manager experiment uses `object_setClass` only for its own `NTKF
 1. **Locate real `ClockFace` executable** in the watchOS DeviceSupport Symbols hierarchy or establish that the corresponding Mach-O is absent from locally available symbols. Do not substitute `ClockFace.axbundle`.
 2. Inspect **actual** `ClockFace.app/ClockFace` dependencies, exported/imported symbols and applicable entitlements only if a suitable copy exists. `codesign` against a stripped symbol copy may not reflect running entitlements.
 3. Map `ClockFace` creation and use of `NTKFaceBundleManager`, face-gallery providers, and the collection persistence path **statically**.
-4. Examine FaceSupportServer's XPC contract and authorization checks. Distinguish accepted descriptor formats from permission to register/execute third-party code.
+4. Map a separately sandbox-reachable system intermediary, if one exists, that legitimately talks to FaceSupportServer. Do not repeat direct NanoTimeKit Mach-service lookups.
+   The embedded Greenfield decoder was audited: it has only a temporary sandbox,
+   consumes caller-provided path extensions, and enables secure symlink/`..`
+   extraction flags. It is not currently a FaceSupport confused deputy.
 5. Only after the above, decide whether a controlled **app-local** experiment adds new information. Avoid retesting established app-local rendering/discovery.
 6. Confirm any actual system-face claim by selecting the face in the system gallery, leaving WatchFaceLab, returning to the watch face and validating that `ClockFace` still renders it. None of this has been achieved yet.
 

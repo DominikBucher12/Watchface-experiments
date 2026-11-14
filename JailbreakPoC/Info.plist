@@ -1,0 +1,21 @@
+<?xml version=\"1.0\" encoding=\"UTF-8\"?>
+<plist version=\"1.0\">
+<dict>
+    <key>CFBundleName</key>
+    <string>JailbreakPoC</string>
+    <key>CFBundleIdentifier</key>
+    <string>com.example.jailbreakpoc</string>
+    <key>CFBundleVersion</key>
+    <string>1.0</string>
+    <key>CFBundleShortVersionString</key>
+    <string>1.0</string>
+    <key>WKAppVersionNumber</key>
+    <string>1.0</string>
+    <key>CFBundleSupportedPlatforms</key>
+    <array>
+        <string>watchos</string>
+    </array>
+    <key>MinimumOSVersion</key>
+    <string>9.6.2</string>
+</dict>
+</plist>
